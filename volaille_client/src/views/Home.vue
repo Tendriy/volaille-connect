@@ -1,8 +1,15 @@
 <template>
   <div class="home-container">
-    <!-- Section Hero -->
+    <!-- Section Hero avec sélecteur de langue -->
     <div class="hero-section">
       <div class="hero-content">
+        <!-- Sélecteur de langue en haut à droite -->
+        <div class="hero-header">
+          <div class="language-wrapper">
+            <LanguageSwitcher />
+          </div>
+        </div>
+        
         <div class="hero-text">
           <div class="logo-animation">
             <span class="chicken-icon">🐔</span>
@@ -10,32 +17,30 @@
             <span class="chicken-icon">🥚</span>
           </div>
           <h1>VOLAILLE <span class="highlight">CONNECT</span></h1>
-          <p class="slogan">Simplifiez la gestion de votre ferme avicole</p>
-          <p class="description">
-            L'application web qui remplace votre cahier papier par un outil numérique simple, 
-            accessible et hors-ligne.
-          </p>
+          <p class="slogan">{{ $t('slogan') }}</p>
+          <p class="description">{{ $t('description') }}</p>
           <div class="buttons">
             <router-link to="/register" class="btn btn-primary">
-              <span>🚀</span> Commencer gratuitement
+              <span>🚀</span> {{ $t('start_free') }}
             </router-link>
             <router-link to="/login" class="btn btn-secondary">
-              <span>🔑</span> Se connecter
+              <span>🔑</span> {{ $t('login') }}
             </router-link>
           </div>
         </div>
+        
         <div class="hero-stats">
           <div class="stat-item">
             <div class="stat-number">100%</div>
-            <div class="stat-label">Malagasy</div>
+            <div class="stat-label">{{ $t('malagasy') }}</div>
           </div>
           <div class="stat-item">
             <div class="stat-number">24/7</div>
-            <div class="stat-label">Disponible</div>
+            <div class="stat-label">{{ $t('available') }}</div>
           </div>
           <div class="stat-item">
             <div class="stat-number">📱</div>
-            <div class="stat-label">Hors-ligne</div>
+            <div class="stat-label">{{ $t('offline') }}</div>
           </div>
         </div>
       </div>
@@ -44,38 +49,38 @@
     <!-- Section Problèmes -->
     <div class="problems-section">
       <div class="container">
-        <h2>Les défis des éleveurs</h2>
-        <p class="section-subtitle">Nous résolvons vos problèmes quotidiens</p>
+        <h2>{{ $t('challenges') }}</h2>
+        <p class="section-subtitle">{{ $t('problems_subtitle') }}</p>
         <div class="problems-grid">
           <div class="problem-card">
             <div class="problem-icon">📓</div>
-            <h3>Perte de données</h3>
-            <p>Cahiers perdus, mouillés ou détruits</p>
+            <h3>{{ $t('data_loss') }}</h3>
+            <p>{{ $t('data_loss_desc') }}</p>
           </div>
           <div class="problem-card">
             <div class="problem-icon">🧮</div>
-            <h3>Calculs erronés</h3>
-            <p>Erreurs dans les calculs manuels</p>
+            <h3>{{ $t('wrong_calculations') }}</h3>
+            <p>{{ $t('wrong_calculations_desc') }}</p>
           </div>
           <div class="problem-card">
             <div class="problem-icon">🔍</div>
-            <h3>Difficulté de recherche</h3>
-            <p>Retrouver une information prend du temps</p>
+            <h3>{{ $t('search_difficulty') }}</h3>
+            <p>{{ $t('search_difficulty_desc') }}</p>
           </div>
           <div class="problem-card">
             <div class="problem-icon">💊</div>
-            <h3>Absence de rappels</h3>
-            <p>Dates de vaccination souvent oubliées</p>
+            <h3>{{ $t('no_reminders') }}</h3>
+            <p>{{ $t('no_reminders_desc') }}</p>
           </div>
           <div class="problem-card">
             <div class="problem-icon">📦</div>
-            <h3>Mauvaise gestion des stocks</h3>
-            <p>Ruptures fréquentes d'aliments</p>
+            <h3>{{ $t('stock_management') }}</h3>
+            <p>{{ $t('stock_management_desc') }}</p>
           </div>
           <div class="problem-card">
             <div class="problem-icon">📊</div>
-            <h3>Manque de vision globale</h3>
-            <p>Difficulté à évaluer la rentabilité</p>
+            <h3>{{ $t('no_overview') }}</h3>
+            <p>{{ $t('no_overview_desc') }}</p>
           </div>
         </div>
       </div>
@@ -84,67 +89,67 @@
     <!-- Section Solutions -->
     <div class="solutions-section">
       <div class="container">
-        <h2>Ce que nous vous offrons</h2>
-        <p class="section-subtitle">Des fonctionnalités puissantes et simples</p>
+        <h2>{{ $t('solutions') }}</h2>
+        <p class="section-subtitle">{{ $t('solutions_subtitle') }}</p>
         <div class="solutions-grid">
           <div class="solution-card">
             <div class="solution-icon">📝</div>
-            <h3>Gestion des lots</h3>
-            <p>Enregistrez et suivez tous vos lots de volailles</p>
+            <h3>{{ $t('lot_management') }}</h3>
+            <p>{{ $t('lot_management_desc') }}</p>
             <ul>
-              <li>✓ Nom, race, fournisseur</li>
-              <li>✓ Nombre initial de sujets</li>
-              <li>✓ Date d'arrivée</li>
+              <li>✓ {{ $t('lot_name') }}, {{ $t('breed') }}, {{ $t('supplier') }}</li>
+              <li>✓ {{ $t('initial_number') }}</li>
+              <li>✓ {{ $t('arrival_date') }}</li>
             </ul>
           </div>
           <div class="solution-card">
             <div class="solution-icon">📈</div>
-            <h3>Suivi quotidien</h3>
-            <p>Enregistrez les données importantes chaque jour</p>
+            <h3>{{ $t('daily_monitoring') }}</h3>
+            <p>{{ $t('daily_monitoring_desc') }}</p>
             <ul>
-              <li>✓ Température</li>
-              <li>✓ Consommation alimentaire</li>
-              <li>✓ Mortalité journalière</li>
+              <li>✓ {{ $t('temperature') }}</li>
+              <li>✓ {{ $t('consumption') }}</li>
+              <li>✓ {{ $t('mortality') }}</li>
             </ul>
           </div>
           <div class="solution-card">
             <div class="solution-icon">💉</div>
-            <h3>Programme vaccinal</h3>
-            <p>Ne manquez plus jamais un vaccin</p>
+            <h3>{{ $t('vaccine_program') }}</h3>
+            <p>{{ $t('vaccine_program_desc') }}</p>
             <ul>
-              <li>✓ Planification des vaccins</li>
-              <li>✓ Rappels automatiques</li>
-              <li>✓ Historique des vaccinations</li>
+              <li>✓ {{ $t('vaccine_planning') }}</li>
+              <li>✓ {{ $t('automatic_reminders') }}</li>
+              <li>✓ {{ $t('vaccine_history') }}</li>
             </ul>
           </div>
           <div class="solution-card">
             <div class="solution-icon">📦</div>
-            <h3>Gestion des stocks</h3>
-            <p>Maîtrisez vos stocks d'aliments</p>
+            <h3>{{ $t('stock_management_title') }}</h3>
+            <p>{{ $t('stock_management_title_desc') }}</p>
             <ul>
-              <li>✓ Suivi des entrées/sorties</li>
-              <li>✓ Alertes stock faible</li>
-              <li>✓ Seuils personnalisables</li>
+              <li>✓ {{ $t('stock_in_out') }}</li>
+              <li>✓ {{ $t('low_stock_alerts') }}</li>
+              <li>✓ {{ $t('custom_thresholds') }}</li>
             </ul>
           </div>
           <div class="solution-card">
             <div class="solution-icon">💰</div>
-            <h3>Ventes et rentabilité</h3>
-            <p>Suivez vos performances financières</p>
+            <h3>{{ $t('sales_profitability') }}</h3>
+            <p>{{ $t('sales_profitability_desc') }}</p>
             <ul>
-              <li>✓ Enregistrement des ventes</li>
-              <li>✓ Calcul automatique CA</li>
-              <li>✓ Statistiques mensuelles</li>
+              <li>✓ {{ $t('sales_recording') }}</li>
+              <li>✓ {{ $t('auto_calculation') }}</li>
+              <li>✓ {{ $t('monthly_stats') }}</li>
             </ul>
           </div>
           <div class="solution-card">
             <div class="solution-icon">📊</div>
-            <h3>Tableau de bord</h3>
-            <p>Une vision globale de votre ferme</p>
+            <h3>{{ $t('dashboard_title') }}</h3>
+            <p>{{ $t('dashboard_desc') }}</p>
             <ul>
-              <li>✓ Indicateurs clés</li>
-              <li>✓ Graphiques dynamiques</li>
-              <li>✓ Alertes en temps réel</li>
+              <li>✓ {{ $t('key_indicators') }}</li>
+              <li>✓ {{ $t('dynamic_charts') }}</li>
+              <li>✓ {{ $t('real_time_alerts') }}</li>
             </ul>
           </div>
         </div>
@@ -154,44 +159,38 @@
     <!-- Section Algorithmes -->
     <div class="algorithms-section">
       <div class="container">
-        <h2>Des algorithmes intelligents</h2>
-        <p class="section-subtitle">Des calculs automatiques pour vous simplifier la vie</p>
+        <h2>{{ $t('smart_algorithms') }}</h2>
+        <p class="section-subtitle">{{ $t('auto_calculations') }}</p>
         <div class="algorithms-grid">
           <div class="algo-card">
             <div class="algo-icon">📊</div>
-            <h3>Taux de mortalité</h3>
-            <code>(morts / total) × 100</code>
-            <p>Détectez rapidement les problèmes sanitaires</p>
+            <h3>{{ $t('mortality_rate_title') }}</h3>
+            <p>{{ $t('mortality_rate_desc') }}</p>
           </div>
           <div class="algo-card">
             <div class="algo-icon">⚠️</div>
-            <h3>Alertes stock</h3>
-            <code>stock ≤ seuil → ALERTE</code>
-            <p>Évitez les ruptures d'aliments</p>
+            <h3>{{ $t('stock_alert_title') }}</h3>
+            <p>{{ $t('stock_alert_desc') }}</p>
           </div>
           <div class="algo-card">
             <div class="algo-icon">🔍</div>
-            <h3>Recherche intelligente</h3>
-            <code>Recherche par nom/race/fournisseur</code>
-            <p>Trouvez vos lots en un clin d'œil</p>
+            <h3>{{ $t('smart_search_title') }}</h3>
+            <p>{{ $t('smart_search_desc') }}</p>
           </div>
           <div class="algo-card">
             <div class="algo-icon">📅</div>
-            <h3>Calcul de l'âge</h3>
-            <code>aujourd'hui - date_arrivée</code>
-            <p>Connaissez l'âge exact de vos volailles</p>
+            <h3>{{ $t('age_calculation_title') }}</h3>
+            <p>{{ $t('age_calculation_desc') }}</p>
           </div>
           <div class="algo-card">
             <div class="algo-icon">💉</div>
-            <h3>Rappels vaccins</h3>
-            <code>J-3 avant vaccination → NOTIFICATION</code>
-            <p>Ne manquez plus aucun vaccin</p>
+            <h3>{{ $t('vaccine_reminder_title') }}</h3>
+            <p>{{ $t('vaccine_reminder_desc') }}</p>
           </div>
           <div class="algo-card">
             <div class="algo-icon">📈</div>
-            <h3>Indice de consommation</h3>
-            <code>aliment_consommé / poids_produit</code>
-            <p>Évaluez l'efficacité alimentaire</p>
+            <h3>{{ $t('consumption_index_title') }}</h3>
+            <p>{{ $t('consumption_index_desc') }}</p>
           </div>
         </div>
       </div>
@@ -200,27 +199,27 @@
     <!-- Section Pourquoi nous -->
     <div class="why-section">
       <div class="container">
-        <h2>Pourquoi choisir VOLAILLE CONNECT ?</h2>
+        <h2>{{ $t('why_choose') }}</h2>
         <div class="why-grid">
           <div class="why-card">
             <div class="why-icon">🌍</div>
-            <h3>100% Malgache</h3>
-            <p>Application entièrement en langue malgache, adaptée aux éleveurs locaux</p>
+            <h3>{{ $t('malagasy_100') }}</h3>
+            <p>{{ $t('malagasy_100_desc') }}</p>
           </div>
           <div class="why-card">
             <div class="why-icon">📴</div>
-            <h3>Fonctionne hors-ligne</h3>
-            <p>Accédez à vos données même sans connexion internet</p>
+            <h3>{{ $t('offline_mode') }}</h3>
+            <p>{{ $t('offline_mode_desc') }}</p>
           </div>
           <div class="why-card">
             <div class="why-icon">🔒</div>
-            <h3>Données sécurisées</h3>
-            <p>Vos données sont stockées localement sur votre appareil</p>
+            <h3>{{ $t('secure_data') }}</h3>
+            <p>{{ $t('secure_data_desc') }}</p>
           </div>
           <div class="why-card">
             <div class="why-icon">🎯</div>
-            <h3>Simple et intuitif</h3>
-            <p>Une interface conçue pour être utilisée par tous</p>
+            <h3>{{ $t('simple_intuitive') }}</h3>
+            <p>{{ $t('simple_intuitive_desc') }}</p>
           </div>
         </div>
       </div>
@@ -230,10 +229,10 @@
     <div class="cta-section">
       <div class="container">
         <div class="cta-content">
-          <h2>Prêt à digitaliser votre ferme ?</h2>
-          <p>Rejoignez des centaines d'éleveurs qui ont déjà adopté VOLAILLE CONNECT</p>
+          <h2>{{ $t('ready_title') }}</h2>
+          <p>{{ $t('ready_desc') }}</p>
           <router-link to="/register" class="btn-cta">
-            Créer un compte gratuitement
+            {{ $t('create_free_account') }}
             <span>→</span>
           </router-link>
         </div>
@@ -245,25 +244,25 @@
       <div class="container">
         <div class="footer-content">
           <div class="footer-brand">
-            <h3>🐔 VOLAILLE CONNECT</h3>
-            <p>Système de Gestion de Ferme Avicole</p>
+            <h3>🐔 {{ $t('app_name') }}</h3>
+            <p>{{ $t('footer_subtitle') }}</p>
           </div>
           <div class="footer-links">
             <div class="footer-section">
-              <h4>Liens rapides</h4>
-              <router-link to="/">Accueil</router-link>
-              <router-link to="/login">Connexion</router-link>
-              <router-link to="/register">Inscription</router-link>
+              <h4>{{ $t('quick_links') }}</h4>
+              <router-link to="/">{{ $t('home') }}</router-link>
+              <router-link to="/login">{{ $t('login') }}</router-link>
+              <router-link to="/register">{{ $t('register') }}</router-link>
             </div>
             <div class="footer-section">
-              <h4>Contact</h4>
+              <h4>{{ $t('contact') }}</h4>
               <p>📧 support@volailleconnect.com</p>
               <p>📞 +261 34 00 000 00</p>
             </div>
           </div>
         </div>
         <div class="footer-bottom">
-          <p>© 2026 VOLAILLE CONNECT - Projet SIO2 | ANDRIANINDRINA Herivelo Anissa - SE20240336</p>
+          <p>{{ $t('copyright') }}</p>
         </div>
       </div>
     </footer>
@@ -271,17 +270,22 @@
 </template>
 
 <script>
+import LanguageSwitcher from '../components/LanguageSwitcher.vue'
+
 export default {
-  name: 'Home'
+  name: 'Home',
+  components: {
+    LanguageSwitcher
+  }
 }
 </script>
 
 <style scoped>
+/* Gardez tous vos styles CSS existants ici */
 .home-container {
   min-height: 100vh;
 }
 
-/* Hero Section */
 .hero-section {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 80px 20px;
@@ -299,6 +303,17 @@ export default {
   background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.1)" fill-opacity="1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
   background-size: cover;
   opacity: 0.3;
+}
+
+.hero-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 40px;
+  padding: 20px 0;
+}
+
+.language-wrapper {
+  position: relative;
 }
 
 .hero-content {
@@ -423,7 +438,6 @@ h1 {
   margin-top: 5px;
 }
 
-/* Sections communes */
 .container {
   max-width: 1200px;
   margin: 0 auto;
@@ -444,7 +458,6 @@ h2 {
   font-size: 1.1rem;
 }
 
-/* Problems Section */
 .problems-section {
   padding: 80px 0;
   background: #f8f9fa;
@@ -484,7 +497,6 @@ h2 {
   color: #666;
 }
 
-/* Solutions Section */
 .solutions-section {
   padding: 80px 0;
   background: white;
@@ -536,7 +548,6 @@ h2 {
   font-size: 0.9rem;
 }
 
-/* Algorithms Section */
 .algorithms-section {
   padding: 80px 0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -578,24 +589,15 @@ h2 {
 
 .algo-card h3 {
   margin-bottom: 15px;
-}
-
-.algo-card code {
-  display: inline-block;
-  background: rgba(0,0,0,0.3);
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-family: monospace;
-  font-size: 0.9rem;
-  margin: 15px 0;
+  font-size: 1.3rem;
 }
 
 .algo-card p {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   opacity: 0.9;
+  line-height: 1.5;
 }
 
-/* Why Section */
 .why-section {
   padding: 80px 0;
   background: white;
@@ -632,7 +634,6 @@ h2 {
   color: #666;
 }
 
-/* CTA Section */
 .cta-section {
   padding: 80px 0;
   background: linear-gradient(135deg, #27ae60 0%, #2c3e50 100%);
@@ -669,7 +670,6 @@ h2 {
   box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 
-/* Footer */
 .footer {
   background: #2c3e50;
   color: white;
@@ -730,12 +730,25 @@ h2 {
 }
 
 @media (max-width: 768px) {
+  .hero-header {
+    margin-bottom: 20px;
+  }
+  
+  .chicken-icon {
+    font-size: 2rem;
+  }
+  
   h1 {
     font-size: 2rem;
   }
   
+  .slogan {
+    font-size: 1.2rem;
+  }
+  
   .buttons {
     flex-direction: column;
+    align-items: center;
   }
   
   .hero-stats {
@@ -751,6 +764,13 @@ h2 {
   .footer-links {
     grid-template-columns: 1fr;
     text-align: center;
+  }
+  
+  .solutions-grid,
+  .problems-grid,
+  .algorithms-grid,
+  .why-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

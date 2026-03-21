@@ -6,38 +6,38 @@
         <div class="info-content">
           <div class="back-home">
             <router-link to="/" class="back-link">
-              ← Retour à l'accueil
+              ← {{ $t('home') }}
             </router-link>
           </div>
           
           <div class="logo">
             <span class="logo-icon">🐔</span>
-            <h2>VOLAILLE CONNECT</h2>
+            <h2>{{ $t('app_name') }}</h2>
           </div>
           
-          <h1>Créer un compte</h1>
-          <p>Rejoignez notre communauté d'éleveurs et simplifiez la gestion de votre ferme avicole</p>
+          <h1>{{ $t('create_account') }}</h1>
+          <p>{{ $t('register_subtitle') }}</p>
           
           <div class="features-list">
             <div class="feature">
               <span class="feature-check">✓</span>
-              <span>Gestion complète des lots de volailles</span>
+              <span>{{ $t('lot_management') }}</span>
             </div>
             <div class="feature">
               <span class="feature-check">✓</span>
-              <span>Suivi quotidien automatique</span>
+              <span>{{ $t('daily_monitoring') }}</span>
             </div>
             <div class="feature">
               <span class="feature-check">✓</span>
-              <span>Alertes et rappels intelligents</span>
+              <span>{{ $t('vaccine_program') }}</span>
             </div>
             <div class="feature">
               <span class="feature-check">✓</span>
-              <span>Tableau de bord personnalisé</span>
+              <span>{{ $t('dashboard_title') }}</span>
             </div>
             <div class="feature">
               <span class="feature-check">✓</span>
-              <span>100% gratuit et sans engagement</span>
+              <span>100% maimaim-poana</span>
             </div>
           </div>
         </div>
@@ -46,7 +46,7 @@
       <!-- Partie droite - Formulaire -->
       <div class="register-form">
         <div class="form-card">
-          <p class="form-subtitle">Créez votre compte en quelques secondes</p>
+          <p class="form-subtitle">{{ $t('register_subtitle') }}</p>
           
           <!-- Message d'erreur -->
           <div v-if="errorMessage" class="error-message-box">
@@ -56,57 +56,45 @@
           <form @submit.prevent="handleRegister">
             <!-- Nom complet -->
             <div class="form-group">
-              <label>
-                <span class="label-icon"></span>
-                Nom complet
-              </label>
+              <label>{{ $t('full_name') }}</label>
               <input 
                 type="text" 
                 v-model="nom_complet" 
-                placeholder="Votre nom et prénom"
+                :placeholder="$t('full_name')"
                 required
               >
             </div>
             
             <!-- Nom d'utilisateur -->
             <div class="form-group">
-              <label>
-                <span class="label-icon"></span>
-                Nom d'utilisateur
-              </label>
+              <label>{{ $t('username') }}</label>
               <input 
                 type="text" 
                 v-model="username" 
-                placeholder="Choisissez un pseudo"
+                :placeholder="$t('username')"
                 required
               >
             </div>
             
             <!-- Email -->
             <div class="form-group">
-              <label>
-                <span class="label-icon"></span>
-                Email
-              </label>
+              <label>{{ $t('email') }}</label>
               <input 
                 type="email" 
                 v-model="email" 
-                placeholder="votre@email.com"
+                :placeholder="$t('email')"
                 required
               >
             </div>
             
             <!-- Mot de passe -->
             <div class="form-group">
-              <label>
-                <span class="label-icon"></span>
-                Mot de passe
-              </label>
+              <label>{{ $t('password') }}</label>
               <div class="password-input">
                 <input 
                   :type="showPassword ? 'text' : 'password'" 
                   v-model="password" 
-                  placeholder="Au moins 6 caractères"
+                  :placeholder="$t('password_min')"
                   required
                   @input="checkPasswordStrength"
                 >
@@ -122,15 +110,12 @@
             
             <!-- Confirmer mot de passe -->
             <div class="form-group">
-              <label>
-                <span class="label-icon">✓</span>
-                Confirmer mot de passe
-              </label>
+              <label>{{ $t('confirm_password') }}</label>
               <div class="password-input">
                 <input 
                   :type="showConfirmPassword ? 'text' : 'password'" 
                   v-model="confirmPassword" 
-                  placeholder="Confirmez votre mot de passe"
+                  :placeholder="$t('confirm_password')"
                   required
                 >
                 <button type="button" class="toggle-password" @click="showConfirmPassword = !showConfirmPassword">
@@ -138,7 +123,7 @@
                 </button>
               </div>
               <div v-if="confirmPassword && password !== confirmPassword" class="error-message">
-                ⚠️ Les mots de passe ne correspondent pas
+                ⚠️ {{ $t('password_mismatch') }}
               </div>
             </div>
             
@@ -146,7 +131,7 @@
             <div class="form-group checkbox">
               <label>
                 <input type="checkbox" v-model="acceptTerms" required>
-                <span>J'accepte les <a href="#" @click.prevent="">conditions d'utilisation</a> et la <a href="#" @click.prevent="">politique de confidentialité</a></span>
+                <span>{{ $t('accept_terms') }}</span>
               </label>
             </div>
             
@@ -156,13 +141,13 @@
               class="btn-register" 
               :disabled="loading || !acceptTerms || password !== confirmPassword || !password"
             >
-              <span v-if="loading"> Inscription en cours...</span>
-              <span v-else> S'inscrire gratuitement</span>
+              <span v-if="loading">{{ $t('loading') }}</span>
+              <span v-else>{{ $t('register') }}</span>
             </button>
           </form>
           
           <div class="form-footer">
-            <p>Déjà inscrit? <router-link to="/login">Se connecter</router-link></p>
+            <p>{{ $t('already_account') }} <router-link to="/login">{{ $t('login') }}</router-link></p>
           </div>
         </div>
       </div>
@@ -171,10 +156,15 @@
 </template>
 
 <script>
-import api from '../services/api' // IMPORTANT: Ajoutez cette ligne
+import api from '../services/api'
+import { useI18n } from 'vue-i18n'
 
 export default {
   name: 'Register',
+  setup() {
+    const { t } = useI18n()
+    return { t }
+  },
   data() {
     return {
       nom_complet: '',
@@ -184,7 +174,7 @@ export default {
       confirmPassword: '',
       acceptTerms: false,
       loading: false,
-      errorMessage: '', // Ajouté pour les messages d'erreur
+      errorMessage: '',
       showPassword: false,
       showConfirmPassword: false,
       passwordStrength: 0
@@ -197,9 +187,9 @@ export default {
       return 'strength-strong'
     },
     strengthText() {
-      if (this.passwordStrength <= 1) return 'Mot de passe faible'
-      if (this.passwordStrength <= 2) return 'Mot de passe moyen'
-      return 'Mot de passe fort'
+      if (this.passwordStrength <= 1) return this.t('password_weak')
+      if (this.passwordStrength <= 2) return this.t('password_medium')
+      return this.t('password_strong')
     }
   },
   methods: {
@@ -213,19 +203,18 @@ export default {
     },
     
     async handleRegister() {
-      // Validation
       if (this.password !== this.confirmPassword) {
-        this.errorMessage = 'Les mots de passe ne correspondent pas'
+        this.errorMessage = this.t('password_mismatch')
         return
       }
       
       if (this.password.length < 6) {
-        this.errorMessage = 'Le mot de passe doit contenir au moins 6 caractères'
+        this.errorMessage = this.t('password_min_error')
         return
       }
       
       if (!this.acceptTerms) {
-        this.errorMessage = 'Vous devez accepter les conditions d\'utilisation'
+        this.errorMessage = this.t('accept_terms_error')
         return
       }
       
@@ -233,13 +222,6 @@ export default {
       this.errorMessage = ''
       
       try {
-        console.log('Tentative d\'inscription avec:', {
-          username: this.username,
-          email: this.email,
-          nom_complet: this.nom_complet
-        })
-        
-        // Appel réel à l'API
         const response = await api.post('/auth/register', {
           username: this.username,
           email: this.email,
@@ -248,29 +230,18 @@ export default {
         })
         
         console.log('Inscription réussie:', response.data)
-        
-        // Message de succès
-        alert('Inscription réussie ! Vous pouvez maintenant vous connecter.')
-        
-        // Redirection vers la page de connexion
+        alert(this.t('register_success'))
         this.$router.push('/login')
         
       } catch (error) {
-        console.error('Erreur lors de l\'inscription:', error)
+        console.error('Erreur inscription:', error)
         
         if (error.response) {
-          // Le serveur a répondu avec une erreur
-          console.log('Status:', error.response.status)
-          console.log('Données:', error.response.data)
-          this.errorMessage = error.response.data.error || 'Erreur lors de l\'inscription'
+          this.errorMessage = error.response.data.error || this.t('error')
         } else if (error.request) {
-          // La requête a été faite mais pas de réponse
-          console.log('Pas de réponse du serveur')
-          this.errorMessage = 'Impossible de contacter le serveur. Vérifiez que le backend est démarré sur http://localhost:3000'
+          this.errorMessage = this.t('server_error')
         } else {
-          // Erreur lors de la configuration
-          console.log('Erreur:', error.message)
-          this.errorMessage = 'Erreur: ' + error.message
+          this.errorMessage = this.t('error')
         }
       } finally {
         this.loading = false
@@ -281,7 +252,6 @@ export default {
 </script>
 
 <style scoped>
-/* Gardez tous vos styles existants ici */
 .register-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -419,10 +389,6 @@ export default {
   font-weight: 600;
   color: #2c3e50;
   font-size: 0.9rem;
-}
-
-.label-icon {
-  font-size: 1rem;
 }
 
 .form-group input[type="text"],

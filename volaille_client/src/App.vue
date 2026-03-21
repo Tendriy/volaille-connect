@@ -3,25 +3,36 @@
     <!-- Menu de navigation pour utilisateurs connectés -->
     <nav v-if="isLoggedIn" class="navbar">
       <div class="nav-container">
-        <div class="nav-brand">🐔 VOLAILLE CONNECT</div>
+        <div class="nav-brand">🐔 {{ $t('app_name') }}</div>
         <div class="nav-links">
-          <router-link to="/dashboard">Tableau de bord</router-link>
-          <router-link to="/lots">Lots</router-link>
-          <router-link to="/stock">Stock</router-link>
-          <router-link to="/vaccins">Vaccins</router-link>
-          <router-link to="/ventes">Ventes</router-link>
-          <button @click="logout" class="logout-btn">Déconnexion</button>
+          <router-link to="/dashboard">{{ $t('dashboard') }}</router-link>
+          <router-link to="/lots">{{ $t('lots') }}</router-link>
+          <router-link to="/stock">{{ $t('stock') }}</router-link>
+          <router-link to="/vaccins">{{ $t('vaccins') }}</router-link>
+          <router-link to="/ventes">{{ $t('ventes') }}</router-link>
+          <LanguageSwitcher />
+          <button @click="logout" class="logout-btn">{{ $t('logout') }}</button>
         </div>
       </div>
     </nav>
     
     <!-- Contenu principal -->
     <router-view />
+    
+    <!-- Sélecteur de langue flottant pour toutes les pages -->
+    <FloatingLanguageSwitcher />
   </div>
 </template>
 
 <script>
+import LanguageSwitcher from './components/LanguageSwitcher.vue'
+import FloatingLanguageSwitcher from './components/FloatingLanguageSwitcher.vue'
+
 export default {
+  components: {
+    LanguageSwitcher,
+    FloatingLanguageSwitcher
+  },
   computed: {
     isLoggedIn() {
       return !!localStorage.getItem('token')
@@ -69,9 +80,15 @@ body {
   font-weight: bold;
 }
 
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
 .nav-links a {
   color: white;
-  margin: 0 10px;
   text-decoration: none;
   padding: 5px 10px;
   border-radius: 3px;
@@ -87,7 +104,6 @@ body {
   color: white;
   border: none;
   padding: 5px 15px;
-  margin-left: 10px;
   cursor: pointer;
   border-radius: 3px;
   transition: background 0.3s;
@@ -95,5 +111,23 @@ body {
 
 .logout-btn:hover {
   background: #c0392b;
+}
+
+@media (max-width: 768px) {
+  .nav-links {
+    gap: 8px;
+  }
+  
+  .nav-links .language-selector .lang-name {
+    display: none;
+  }
+  
+  .nav-links .language-selector .lang-selected {
+    padding: 8px;
+  }
+  
+  .nav-links .language-selector .dropdown-icon {
+    display: none;
+  }
 }
 </style>

@@ -1,19 +1,19 @@
 <template>
   <div class="container">
     <div class="header-actions">
-      <h1>Gestion du stock d'aliments</h1>
+      <h1>{{ $t('stock') }}</h1>
       <button class="btn btn-success" @click="showAddModal = true">
-        + Ajouter stock
+        + {{ $t('add_stock') }}
       </button>
     </div>
     
     <!-- Alertes stock -->
     <div v-if="stockAlerte.length > 0" class="alert alert-warning">
-      <h3>⚠️ Alertes stock faible</h3>
+      <h3>⚠️ {{ $t('stock_alerts') }}</h3>
       <ul>
         <li v-for="item in stockAlerte" :key="item.id">
           {{ item.type_aliment }}: {{ item.quantite }} {{ item.unite }} 
-          (seuil: {{ item.seuil_alerte }} {{ item.unite }})
+          ({{ $t('alert_threshold') }}: {{ item.seuil_alerte }} {{ item.unite }})
         </li>
       </ul>
     </div>
@@ -23,14 +23,14 @@
       <table class="table">
         <thead>
           <tr>
-            <th>Type d'aliment</th>
-            <th>Quantité</th>
-            <th>Unité</th>
-            <th>Seuil d'alerte</th>
-            <th>Date d'achat</th>
-            <th>Statut</th>
-            <th>Actions</th>
-          </tr>
+            <th>{{ $t('feed_type') }}</th>
+            <th>{{ $t('quantity') }}</th>
+            <th>{{ $t('unit') }}</th>
+            <th>{{ $t('alert_threshold') }}</th>
+            <th>{{ $t('purchase_date') }}</th>
+            <th>{{ $t('status') }}</th>
+            <th>{{ $t('actions') }}</th>
+           </tr>
         </thead>
         <tbody>
           <tr v-for="item in stock" :key="item.id" :class="{'alerte-ligne': item.alerte}">
@@ -41,59 +41,59 @@
             <td>{{ formatDate(item.date_achat) }}</td>
             <td>
               <span :class="item.alerte ? 'badge-danger' : 'badge-success'">
-                {{ item.alerte ? 'Stock faible' : 'Normal' }}
+                {{ item.alerte ? $t('low_stock') : $t('normal') }}
               </span>
             </td>
             <td>
-              <button class="btn" @click="editerStock(item)">Modifier</button>
-              <button class="btn btn-danger" @click="supprimerStock(item.id)">Supprimer</button>
+              <button class="btn" @click="editerStock(item)">{{ $t('edit') }}</button>
+              <button class="btn btn-danger" @click="supprimerStock(item.id)">{{ $t('delete') }}</button>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
     
-    <!-- Modal Ajout/Modification Stock -->
+    <!-- Modal Ajout Stock -->
     <div v-if="showAddModal" class="modal">
       <div class="modal-content">
-        <h2>{{ editingStock ? 'Modifier' : 'Ajouter' }} stock</h2>
+        <h2>{{ editingStock ? $t('edit_stock') : $t('add_stock') }}</h2>
         
         <form @submit.prevent="saveStock">
           <div class="form-group">
-            <label>Type d'aliment *</label>
+            <label>{{ $t('feed_type') }} *</label>
             <input type="text" v-model="stockForm.type_aliment" required>
           </div>
           
           <div class="form-group">
-            <label>Quantité *</label>
+            <label>{{ $t('quantity') }} *</label>
             <input type="number" step="0.01" v-model="stockForm.quantite" required min="0">
           </div>
           
           <div class="form-group">
-            <label>Unité</label>
+            <label>{{ $t('unit') }}</label>
             <select v-model="stockForm.unite">
-              <option value="kg">Kilogrammes (kg)</option>
-              <option value="sac">Sacs</option>
-              <option value="tonne">Tonnes</option>
+              <option value="kg">{{ $t('kg') }}</option>
+              <option value="sac">{{ $t('sac') }}</option>
+              <option value="tonne">{{ $t('tonne') }}</option>
             </select>
           </div>
           
           <div class="form-group">
-            <label>Seuil d'alerte</label>
+            <label>{{ $t('alert_threshold') }}</label>
             <input type="number" step="0.01" v-model="stockForm.seuil_alerte" min="0">
           </div>
           
           <div class="form-group">
-            <label>Date d'achat</label>
+            <label>{{ $t('purchase_date') }}</label>
             <input type="date" v-model="stockForm.date_achat">
           </div>
           
           <div class="modal-actions">
             <button type="button" class="btn btn-danger" @click="showAddModal = false">
-              Annuler
+              {{ $t('delete') }}
             </button>
             <button type="submit" class="btn btn-success">
-              {{ editingStock ? 'Modifier' : 'Ajouter' }}
+              {{ editingStock ? $t('edit') : $t('add_stock') }}
             </button>
           </div>
         </form>
@@ -155,7 +155,7 @@ export default {
     },
     
     async supprimerStock(id) {
-      if (confirm('Voulez-vous vraiment supprimer cet aliment ?')) {
+      if (confirm(this.$t('confirm_delete'))) {
         try {
           await api.delete(`/stock/${id}`)
           this.loadStock()
@@ -247,5 +247,89 @@ export default {
   color: white;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 1rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.table th {
+  background: #f8f9fa;
+  font-weight: bold;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 0 0.25rem;
+}
+
+.btn-success {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-danger {
+  background: #e74c3c;
+  color: white;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.alert {
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.alert-warning {
+  color: #856404;
+}
+
+.alert ul {
+  margin-left: 1.5rem;
+  margin-top: 0.5rem;
 }
 </style>

@@ -1,34 +1,34 @@
 <template>
   <div class="container">
     <div class="header-actions">
-      <h1>Gestion des ventes</h1>
+      <h1>{{ $t('ventes') }}</h1>
       <button class="btn btn-success" @click="showAddModal = true">
-        + Nouvelle vente
+        + {{ $t('new_sale') }}
       </button>
     </div>
     
     <!-- Résumé ventes -->
     <div class="card">
-      <h2>Chiffre d'affaires</h2>
+      <h2>{{ $t('revenue') }}</h2>
       <div class="ca-total">
-        <span class="ca-label">Total:</span>
+        <span class="ca-label">{{ $t('total_amount') }}:</span>
         <span class="ca-value">{{ formatPrix(chiffreAffaires) }} Ar</span>
       </div>
     </div>
     
     <!-- Historique ventes -->
     <div class="card">
-      <h2>Historique des ventes</h2>
+      <h2>{{ $t('sales') }}</h2>
       <table class="table">
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Lot</th>
-            <th>Nombre vendu</th>
-            <th>Prix unitaire</th>
-            <th>Total</th>
-            <th>Acheteur</th>
-          </tr>
+            <th>{{ $t('date') }}</th>
+            <th>{{ $t('lot_name') }}</th>
+            <th>{{ $t('number_sold') }}</th>
+            <th>{{ $t('unit_price') }}</th>
+            <th>{{ $t('total_amount') }}</th>
+            <th>{{ $t('buyer') }}</th>
+           </tr>
         </thead>
         <tbody>
           <tr v-for="vente in ventes" :key="vente.id">
@@ -46,13 +46,13 @@
     <!-- Modal Ajout Vente -->
     <div v-if="showAddModal" class="modal">
       <div class="modal-content">
-        <h2>Enregistrer une vente</h2>
+        <h2>{{ $t('new_sale') }}</h2>
         
         <form @submit.prevent="saveVente">
           <div class="form-group">
-            <label>Lot *</label>
+            <label>{{ $t('lot_name') }} *</label>
             <select v-model="venteForm.lot_id" required>
-              <option value="">Sélectionner un lot</option>
+              <option value="">{{ $t('lot_name') }}</option>
               <option v-for="lot in lots" :key="lot.id" :value="lot.id">
                 {{ lot.nom_lot }} - {{ lot.race }}
               </option>
@@ -60,31 +60,31 @@
           </div>
           
           <div class="form-group">
-            <label>Date de vente *</label>
+            <label>{{ $t('date') }} *</label>
             <input type="date" v-model="venteForm.date_vente" required>
           </div>
           
           <div class="form-group">
-            <label>Nombre vendu *</label>
+            <label>{{ $t('number_sold') }} *</label>
             <input type="number" v-model="venteForm.nombre_vendu" required min="1">
           </div>
           
           <div class="form-group">
-            <label>Prix unitaire (Ar) *</label>
+            <label>{{ $t('unit_price') }} (Ar) *</label>
             <input type="number" step="100" v-model="venteForm.prix_unitaire" required min="0">
           </div>
           
           <div class="form-group">
-            <label>Acheteur</label>
+            <label>{{ $t('buyer') }}</label>
             <input type="text" v-model="venteForm.acheteur">
           </div>
           
           <div class="modal-actions">
             <button type="button" class="btn btn-danger" @click="showAddModal = false">
-              Annuler
+              {{ $t('delete') }}
             </button>
             <button type="submit" class="btn btn-success">
-              Enregistrer
+              {{ $t('new_sale') }}
             </button>
           </div>
         </form>
@@ -145,10 +145,10 @@ export default {
         this.resetForm()
         this.loadVentes()
         
-        alert('Vente enregistrée avec succès!')
+        alert(this.$t('success'))
       } catch (error) {
         console.error('Erreur enregistrement vente:', error)
-        alert('Erreur lors de l\'enregistrement de la vente')
+        alert(this.$t('error'))
       }
     },
     
@@ -261,6 +261,24 @@ export default {
   background: #f5f5f5;
 }
 
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 0 0.25rem;
+}
+
+.btn-success {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-danger {
+  background: #e74c3c;
+  color: white;
+}
+
 .form-group {
   margin-bottom: 1rem;
 }
@@ -277,32 +295,6 @@ export default {
   padding: 0.5rem;
   border: 1px solid #ddd;
   border-radius: 4px;
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.btn-success {
-  background: #27ae60;
-  color: white;
-}
-
-.btn-success:hover {
-  background: #229954;
-}
-
-.btn-danger {
-  background: #e74c3c;
-  color: white;
-}
-
-.btn-danger:hover {
-  background: #c0392b;
 }
 
 .container {

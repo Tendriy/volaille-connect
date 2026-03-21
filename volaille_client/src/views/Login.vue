@@ -5,52 +5,45 @@
         <div class="info-content">
           <div class="back-home">
             <router-link to="/" class="back-link">
-              ← Retour à l'accueil
+              ← {{ $t('home') }}
             </router-link>
           </div>
           <div class="logo">
             <span class="logo-icon">🐔</span>
-            <h2>VOLAILLE CONNECT</h2>
+            <h2>{{ $t('app_name') }}</h2>
           </div>
-          <h1>Bienvenue !</h1>
-          <p>Connectez-vous pour accéder à votre espace de gestion de ferme avicole</p>
+          <h1>{{ $t('welcome') }} !</h1>
+          <p>{{ $t('login_subtitle') }}</p>
         </div>
       </div>
       
       <div class="login-form">
         <div class="form-card">
-          <h2>Connexion</h2>
-          <p class="form-subtitle">Accédez à votre compte</p>
+          <h2>{{ $t('login_title') }}</h2>
+          <p class="form-subtitle">{{ $t('login_subtitle') }}</p>
           
-          <!-- Message d'erreur -->
           <div v-if="errorMessage" class="error-message-box">
             ⚠️ {{ errorMessage }}
           </div>
           
           <form @submit.prevent="handleLogin">
             <div class="form-group">
-              <label>
-                <span class="label-icon">📧</span>
-                Email
-              </label>
+              <label>{{ $t('email') }}</label>
               <input 
                 type="email" 
                 v-model="email" 
-                placeholder="votre@email.com"
+                :placeholder="$t('email')"
                 required
               >
             </div>
             
             <div class="form-group">
-              <label>
-                <span class="label-icon">🔒</span>
-                Mot de passe
-              </label>
+              <label>{{ $t('password') }}</label>
               <div class="password-input">
                 <input 
                   :type="showPassword ? 'text' : 'password'" 
                   v-model="password" 
-                  placeholder="Votre mot de passe"
+                  :placeholder="$t('password')"
                   required
                 >
                 <button type="button" class="toggle-password" @click="showPassword = !showPassword">
@@ -60,13 +53,13 @@
             </div>
             
             <button type="submit" class="btn-login" :disabled="loading">
-              <span v-if="loading">⏳ Connexion en cours...</span>
-              <span v-else>🔑 Se connecter</span>
+              <span v-if="loading">{{ $t('loading') }}</span>
+              <span v-else>🔑 {{ $t('login') }}</span>
             </button>
           </form>
           
           <div class="form-footer">
-            <p>Pas encore de compte? <router-link to="/register">Créer un compte gratuit</router-link></p>
+            <p>{{ $t('no_account') }} <router-link to="/register">{{ $t('create_account') }}</router-link></p>
           </div>
         </div>
       </div>
@@ -76,8 +69,13 @@
 
 <script>
 import api from '../services/api'
+import { useI18n } from 'vue-i18n'
 
 export default {
+  setup() {
+    const { t } = useI18n()
+    return { t }
+  },
   data() {
     return {
       email: '',
@@ -90,7 +88,7 @@ export default {
   methods: {
     async handleLogin() {
       if (!this.email || !this.password) {
-        this.errorMessage = 'Veuillez remplir tous les champs'
+        this.errorMessage = this.t('error')
         return
       }
       
@@ -98,38 +96,25 @@ export default {
       this.errorMessage = ''
       
       try {
-        console.log('Tentative de connexion avec:', this.email)
-        
         const response = await api.post('/auth/login', {
           email: this.email,
           password: this.password
         })
         
-        console.log('Réponse reçue:', response.data)
-        
-        // Stocker le token
         localStorage.setItem('token', response.data.token)
         localStorage.setItem('user', JSON.stringify(response.data.user))
         
-        // Rediriger vers le tableau de bord
         this.$router.push('/dashboard')
         
       } catch (error) {
-        console.error('Erreur complète:', error)
+        console.error('Erreur:', error)
         
         if (error.response) {
-          // Le serveur a répondu avec un statut d'erreur
-          console.log('Status:', error.response.status)
-          console.log('Données:', error.response.data)
-          this.errorMessage = error.response.data.error || 'Erreur de connexion'
+          this.errorMessage = error.response.data.error || this.t('error')
         } else if (error.request) {
-          // La requête a été faite mais pas de réponse
-          console.log('Pas de réponse du serveur')
-          this.errorMessage = 'Impossible de contacter le serveur. Vérifiez que le backend est démarré sur http://localhost:3000'
+          this.errorMessage = 'Impossible de contacter le serveur'
         } else {
-          // Erreur lors de la configuration
-          console.log('Erreur:', error.message)
-          this.errorMessage = 'Erreur: ' + error.message
+          this.errorMessage = this.t('error')
         }
       } finally {
         this.loading = false
@@ -140,6 +125,7 @@ export default {
 </script>
 
 <style scoped>
+/* Vos styles existants pour Login */
 .login-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -172,12 +158,6 @@ export default {
   color: white;
   text-decoration: none;
   opacity: 0.8;
-  transition: opacity 0.3s;
-  font-size: 0.9rem;
-}
-
-.back-link:hover {
-  opacity: 1;
 }
 
 .logo {
@@ -194,7 +174,6 @@ export default {
 .logo h2 {
   font-size: 1.5rem;
   margin: 0;
-  color: white;
 }
 
 .login-info h1 {
@@ -206,7 +185,6 @@ export default {
   font-size: 1rem;
   margin-bottom: 30px;
   opacity: 0.9;
-  line-height: 1.6;
 }
 
 .login-form {
@@ -224,17 +202,15 @@ export default {
 }
 
 .form-card h2 {
-  font-size: 1.8rem;
-  color: #2c3e50;
-  margin-bottom: 8px;
   text-align: center;
+  color: #2c3e50;
+  margin-bottom: 10px;
 }
 
 .form-subtitle {
   text-align: center;
   color: #666;
   margin-bottom: 30px;
-  font-size: 0.9rem;
 }
 
 .error-message-box {
@@ -244,7 +220,6 @@ export default {
   padding: 10px;
   border-radius: 5px;
   margin-bottom: 20px;
-  font-size: 0.9rem;
   text-align: center;
 }
 
@@ -253,17 +228,10 @@ export default {
 }
 
 .form-group label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: block;
   margin-bottom: 8px;
   font-weight: 600;
   color: #2c3e50;
-  font-size: 0.9rem;
-}
-
-.label-icon {
-  font-size: 1rem;
 }
 
 .form-group input {
@@ -272,14 +240,11 @@ export default {
   border: 2px solid #e0e0e0;
   border-radius: 8px;
   font-size: 0.95rem;
-  transition: all 0.3s;
-  font-family: inherit;
 }
 
 .form-group input:focus {
   outline: none;
   border-color: #27ae60;
-  box-shadow: 0 0 0 3px rgba(39,174,96,0.1);
 }
 
 .password-input {
@@ -287,7 +252,6 @@ export default {
 }
 
 .password-input input {
-  width: 100%;
   padding-right: 40px;
 }
 
@@ -300,12 +264,6 @@ export default {
   border: none;
   cursor: pointer;
   font-size: 1.1rem;
-  padding: 0;
-  opacity: 0.6;
-}
-
-.toggle-password:hover {
-  opacity: 1;
 }
 
 .btn-login {
@@ -324,13 +282,11 @@ export default {
 .btn-login:hover:not(:disabled) {
   background: #229954;
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(39,174,96,0.3);
 }
 
 .btn-login:disabled {
   background: #ccc;
   cursor: not-allowed;
-  transform: none;
 }
 
 .form-footer {
@@ -340,19 +296,10 @@ export default {
   border-top: 1px solid #e0e0e0;
 }
 
-.form-footer p {
-  font-size: 0.9rem;
-  color: #666;
-}
-
 .form-footer a {
   color: #27ae60;
   text-decoration: none;
   font-weight: 600;
-}
-
-.form-footer a:hover {
-  text-decoration: underline;
 }
 
 @media (max-width: 768px) {

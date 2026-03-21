@@ -1,20 +1,20 @@
 <template>
   <div class="container">
     <div class="header-actions">
-      <h1>Gestion des lots</h1>
+      <h1>{{ $t('lots') }}</h1>
       <button class="btn btn-success" @click="showAddModal = true">
-        + Nouveau lot
+        + {{ $t('new_lot') }}
       </button>
     </div>
     
-    <!-- Recherche (Algorithme 11.3) -->
+    <!-- Recherche -->
     <div class="card">
       <div class="form-group">
-        <label>Rechercher un lot</label>
+        <label>{{ $t('search_lot') }}</label>
         <input 
           type="text" 
           v-model="recherche" 
-          placeholder="Nom, race ou fournisseur..."
+          :placeholder="$t('search_lot')"
           @input="rechercherLots"
         >
       </div>
@@ -25,16 +25,16 @@
       <table class="table">
         <thead>
           <tr>
-            <th>Nom du lot</th>
-            <th>Race</th>
-            <th>Fournisseur</th>
-            <th>Nombre initial</th>
-            <th>Date arrivée</th>
-            <th>Âge</th>
-            <th>Taux mortalité</th>
-            <th>Statut</th>
-            <th>Actions</th>
-          </tr>
+            <th>{{ $t('lot_name') }}</th>
+            <th>{{ $t('breed') }}</th>
+            <th>{{ $t('supplier') }}</th>
+            <th>{{ $t('initial_number') }}</th>
+            <th>{{ $t('arrival_date') }}</th>
+            <th>{{ $t('age') }}</th>
+            <th>{{ $t('mortality_rate') }}</th>
+            <th>{{ $t('status') }}</th>
+            <th>{{ $t('actions') }}</th>
+           </tr>
         </thead>
         <tbody>
           <tr v-for="lot in lotsFiltres" :key="lot.id">
@@ -43,7 +43,7 @@
             <td>{{ lot.fournisseur }}</td>
             <td>{{ lot.nombre_initial }}</td>
             <td>{{ formatDate(lot.date_arrivee) }}</td>
-            <td>{{ lot.age }} jours</td>
+            <td>{{ lot.age }} {{ $t('days') }}</td>
             <td>
               <span :class="getTauxMortaliteClass(lot.taux_mortalite)">
                 {{ lot.taux_mortalite || 0 }}%
@@ -51,55 +51,55 @@
             </td>
             <td>
               <span :class="lot.statut === 'actif' ? 'badge-actif' : 'badge-cloture'">
-                {{ lot.statut }}
+                {{ lot.statut === 'actif' ? $t('active') : $t('closed') }}
               </span>
             </td>
             <td>
-              <button class="btn" @click="voirLot(lot.id)">Détails</button>
-              <button class="btn btn-danger" @click="confirmerSuppression(lot)">Supprimer</button>
+              <button class="btn" @click="voirLot(lot.id)">{{ $t('view') }}</button>
+              <button class="btn btn-danger" @click="confirmerSuppression(lot)">{{ $t('delete') }}</button>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
     
-    <!-- Modal Ajout/Modification Lot -->
+    <!-- Modal Ajout Lot -->
     <div v-if="showAddModal" class="modal">
       <div class="modal-content">
-        <h2>{{ editingLot ? 'Modifier' : 'Ajouter' }} un lot</h2>
+        <h2>{{ editingLot ? $t('edit_lot') : $t('new_lot') }}</h2>
         
         <form @submit.prevent="saveLot">
           <div class="form-group">
-            <label>Nom du lot *</label>
+            <label>{{ $t('lot_name') }} *</label>
             <input type="text" v-model="lotForm.nom_lot" required>
           </div>
           
           <div class="form-group">
-            <label>Race</label>
+            <label>{{ $t('breed') }}</label>
             <input type="text" v-model="lotForm.race">
           </div>
           
           <div class="form-group">
-            <label>Fournisseur</label>
+            <label>{{ $t('supplier') }}</label>
             <input type="text" v-model="lotForm.fournisseur">
           </div>
           
           <div class="form-group">
-            <label>Nombre initial *</label>
+            <label>{{ $t('initial_number') }} *</label>
             <input type="number" v-model="lotForm.nombre_initial" required min="1">
           </div>
           
           <div class="form-group">
-            <label>Date d'arrivée *</label>
+            <label>{{ $t('arrival_date') }} *</label>
             <input type="date" v-model="lotForm.date_arrivee" required>
           </div>
           
           <div class="modal-actions">
             <button type="button" class="btn btn-danger" @click="showAddModal = false">
-              Annuler
+              {{ $t('delete') }}
             </button>
             <button type="submit" class="btn btn-success">
-              {{ editingLot ? 'Modifier' : 'Ajouter' }}
+              {{ editingLot ? $t('edit') : $t('new_lot') }}
             </button>
           </div>
         </form>
@@ -142,7 +142,6 @@ export default {
       }
     },
     
-    // Algorithme 11.3: Recherche de lots
     rechercherLots() {
       if (!this.recherche) {
         this.lotsFiltres = this.lots
@@ -174,7 +173,7 @@ export default {
     },
     
     async confirmerSuppression(lot) {
-      if (confirm(`Voulez-vous vraiment supprimer le lot "${lot.nom_lot}" ?`)) {
+      if (confirm(this.$t('confirm_delete'))) {
         try {
           await api.delete(`/lots/${lot.id}`)
           this.loadLots()
@@ -275,5 +274,71 @@ export default {
   color: white;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 1rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.table th {
+  background: #f8f9fa;
+  font-weight: bold;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 0 0.25rem;
+}
+
+.btn-success {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-danger {
+  background: #e74c3c;
+  color: white;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
 }
 </style>

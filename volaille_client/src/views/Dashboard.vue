@@ -1,19 +1,19 @@
 <template>
   <div class="container">
-    <h1>Tableau de bord</h1>
+    <h1>{{ $t('dashboard') }}</h1>
     
     <!-- Alertes -->
     <div v-if="alertesStock.length > 0" class="alert alert-warning">
-      <h3>⚠️ Alertes Stock</h3>
+      <h3>⚠️ {{ $t('stock_alerts') }}</h3>
       <ul>
         <li v-for="alerte in alertesStock" :key="alerte.id">
-          {{ alerte.message_alerte }} pour {{ alerte.type_aliment }}
+          {{ alerte.message_alerte }} {{ $t('for') }} {{ alerte.type_aliment }}
         </li>
       </ul>
     </div>
     
     <div v-if="alertesVaccins.length > 0" class="alert alert-warning">
-      <h3>💉 Alertes Vaccins</h3>
+      <h3>💉 {{ $t('vaccine_reminder') }}</h3>
       <ul>
         <li v-for="alerte in alertesVaccins" :key="alerte.id">
           {{ alerte.message }}
@@ -24,38 +24,38 @@
     <!-- Résumé -->
     <div class="dashboard-grid">
       <div class="card stat-card">
-        <h3>Lots actifs</h3>
+        <h3>{{ $t('active_lots') }}</h3>
         <p class="stat-number">{{ resume.lots_actifs }}</p>
       </div>
       
       <div class="card stat-card">
-        <h3>Total volailles</h3>
+        <h3>{{ $t('total_poultry') }}</h3>
         <p class="stat-number">{{ resume.total_volailles }}</p>
       </div>
       
       <div class="card stat-card">
-        <h3>Alertes stock</h3>
+        <h3>{{ $t('stock_alerts') }}</h3>
         <p class="stat-number">{{ resume.alertes_stock }}</p>
       </div>
       
       <div class="card stat-card">
-        <h3>Vaccins à venir</h3>
+        <h3>{{ $t('upcoming_vaccines_count') }}</h3>
         <p class="stat-number">{{ resume.vaccins_programmes }}</p>
       </div>
     </div>
     
     <!-- Lots récents -->
     <div class="card">
-      <h2>Lots récents</h2>
+      <h2>{{ $t('recent_lots') }}</h2>
       <table class="table">
         <thead>
           <tr>
-            <th>Nom du lot</th>
-            <th>Race</th>
-            <th>Nombre initial</th>
-            <th>Âge (jours)</th>
-            <th>Statut</th>
-            <th>Actions</th>
+            <th>{{ $t('lot_name') }}</th>
+            <th>{{ $t('breed') }}</th>
+            <th>{{ $t('initial_number') }}</th>
+            <th>{{ $t('age') }}</th>
+            <th>{{ $t('status') }}</th>
+            <th>{{ $t('actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -63,14 +63,14 @@
             <td>{{ lot.nom_lot }}</td>
             <td>{{ lot.race }}</td>
             <td>{{ lot.nombre_initial }}</td>
-            <td>{{ lot.age }}</td>
+            <td>{{ lot.age }} {{ $t('days') }}</td>
             <td>
               <span :class="lot.statut === 'actif' ? 'badge-actif' : 'badge-cloture'">
-                {{ lot.statut }}
+                {{ lot.statut === 'actif' ? $t('active') : $t('closed') }}
               </span>
             </td>
             <td>
-              <button class="btn" @click="voirLot(lot.id)">Voir</button>
+              <button class="btn" @click="voirLot(lot.id)">{{ $t('view') }}</button>
             </td>
           </tr>
         </tbody>
@@ -170,5 +170,63 @@ export default {
   color: white;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 1rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.table th {
+  background: #f8f9fa;
+  font-weight: bold;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: #27ae60;
+  color: white;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.alert {
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.alert-warning {
+  color: #856404;
+}
+
+.alert ul {
+  margin-left: 1.5rem;
+  margin-top: 0.5rem;
 }
 </style>

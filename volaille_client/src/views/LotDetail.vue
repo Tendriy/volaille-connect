@@ -1,51 +1,51 @@
 <template>
   <div class="container" v-if="lot">
     <div class="header-actions">
-      <h1>Détail du lot: {{ lot.nom_lot }}</h1>
-      <button class="btn" @click="$router.push('/lots')">Retour</button>
+      <h1>{{ $t('lot_details') }}: {{ lot.nom_lot }}</h1>
+      <button class="btn" @click="$router.push('/lots')">{{ $t('back') }}</button>
     </div>
     
     <div class="card">
-      <h2>Informations générales</h2>
+      <h2>{{ $t('general_info') }}</h2>
       <div class="info-grid">
-        <div><strong>Race:</strong> {{ lot.race }}</div>
-        <div><strong>Fournisseur:</strong> {{ lot.fournisseur }}</div>
-        <div><strong>Nombre initial:</strong> {{ lot.nombre_initial }}</div>
-        <div><strong>Date arrivée:</strong> {{ formatDate(lot.date_arrivee) }}</div>
-        <div><strong>Âge:</strong> {{ lot.age }} jours</div>
-        <div><strong>Taux mortalité:</strong> 
+        <div><strong>{{ $t('breed') }}:</strong> {{ lot.race }}</div>
+        <div><strong>{{ $t('supplier') }}:</strong> {{ lot.fournisseur }}</div>
+        <div><strong>{{ $t('initial_number') }}:</strong> {{ lot.nombre_initial }}</div>
+        <div><strong>{{ $t('arrival_date') }}:</strong> {{ formatDate(lot.date_arrivee) }}</div>
+        <div><strong>{{ $t('age') }}:</strong> {{ lot.age }} {{ $t('days') }}</div>
+        <div><strong>{{ $t('mortality_rate') }}:</strong> 
           <span :class="getTauxMortaliteClass(lot.taux_mortalite)">
             {{ lot.taux_mortalite || 0 }}%
           </span>
         </div>
-        <div><strong>Statut:</strong> 
+        <div><strong>{{ $t('status') }}:</strong> 
           <span :class="lot.statut === 'actif' ? 'badge-actif' : 'badge-cloture'">
-            {{ lot.statut }}
+            {{ lot.statut === 'actif' ? $t('active') : $t('closed') }}
           </span>
         </div>
       </div>
       
       <div class="actions" v-if="lot.statut === 'actif'">
         <button class="btn btn-success" @click="showSuiviModal = true">
-          Ajouter suivi quotidien
+          {{ $t('add_followup') }}
         </button>
         <button class="btn btn-warning" @click="cloturerLot">
-          Clôturer le lot
+          {{ $t('close_lot') }}
         </button>
       </div>
     </div>
     
     <!-- Suivi quotidien -->
     <div class="card">
-      <h2>Suivi quotidien</h2>
+      <h2>{{ $t('daily_followup') }}</h2>
       <table class="table">
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Température</th>
-            <th>Consommation (kg)</th>
-            <th>Mortalité</th>
-            <th>Observations</th>
+            <th>{{ $t('date') }}</th>
+            <th>{{ $t('temperature') }}</th>
+            <th>{{ $t('consumption') }} (kg)</th>
+            <th>{{ $t('mortality') }}</th>
+            <th>{{ $t('observations') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -63,40 +63,40 @@
     <!-- Modal Ajout Suivi -->
     <div v-if="showSuiviModal" class="modal">
       <div class="modal-content">
-        <h2>Ajouter suivi quotidien</h2>
+        <h2>{{ $t('add_followup') }}</h2>
         
         <form @submit.prevent="saveSuivi">
           <div class="form-group">
-            <label>Date *</label>
+            <label>{{ $t('date') }} *</label>
             <input type="date" v-model="suiviForm.date_suivi" required>
           </div>
           
           <div class="form-group">
-            <label>Température (°C)</label>
+            <label>{{ $t('temperature') }} (°C)</label>
             <input type="number" step="0.1" v-model="suiviForm.temperature">
           </div>
           
           <div class="form-group">
-            <label>Consommation alimentaire (kg)</label>
+            <label>{{ $t('consumption') }} (kg)</label>
             <input type="number" step="0.01" v-model="suiviForm.consommation_aliment">
           </div>
           
           <div class="form-group">
-            <label>Mortalité du jour</label>
+            <label>{{ $t('mortality') }}</label>
             <input type="number" v-model="suiviForm.mortalite_jour" min="0">
           </div>
           
           <div class="form-group">
-            <label>Observations</label>
+            <label>{{ $t('observations') }}</label>
             <textarea v-model="suiviForm.observations" rows="3"></textarea>
           </div>
           
           <div class="modal-actions">
             <button type="button" class="btn btn-danger" @click="showSuiviModal = false">
-              Annuler
+              {{ $t('cancel') }}
             </button>
             <button type="submit" class="btn btn-success">
-              Enregistrer
+              {{ $t('save') }}
             </button>
           </div>
         </form>
@@ -155,14 +155,14 @@ export default {
         
         this.showSuiviModal = false
         this.loadSuivis()
-        this.loadLot() // Recharger pour mettre à jour le taux de mortalité
+        this.loadLot()
       } catch (error) {
         console.error('Erreur sauvegarde suivi:', error)
       }
     },
     
     async cloturerLot() {
-      if (confirm('Voulez-vous vraiment clôturer ce lot ?')) {
+      if (confirm(this.$t('confirm_close'))) {
         try {
           await api.put(`/lots/${this.$route.params.id}/cloturer`)
           this.loadLot()
@@ -210,6 +210,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 1000;
 }
 
 .modal-content {
@@ -258,9 +259,85 @@ export default {
 
 .btn-warning {
   background: #f39c12;
+  color: white;
 }
 
 .btn-warning:hover {
   background: #e67e22;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 1rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.table th {
+  background: #f8f9fa;
+  font-weight: bold;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-success {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-danger {
+  background: #e74c3c;
+  color: white;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
 }
 </style>

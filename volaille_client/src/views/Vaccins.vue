@@ -1,20 +1,20 @@
 <template>
   <div class="container">
     <div class="header-actions">
-      <h1>Programme de vaccination</h1>
+      <h1>{{ $t('vaccins') }}</h1>
       <button class="btn btn-success" @click="showAddModal = true">
-        + Programmer vaccin
+        + {{ $t('program_vaccine') }}
       </button>
     </div>
     
-    <!-- Alertes vaccins (Algorithme 11.9) -->
+    <!-- Alertes vaccins -->
     <div v-if="alertesVaccins.length > 0" class="alert alert-warning">
-      <h3>💉 Rappels vaccins à venir</h3>
+      <h3>💉 {{ $t('vaccine_reminder') }}</h3>
       <ul>
         <li v-for="alerte in alertesVaccins" :key="alerte.id">
           {{ alerte.message }}
           <button class="btn btn-small" @click="marquerEffectue(alerte.id)">
-            Marquer effectué
+            {{ $t('mark_done') }}
           </button>
         </li>
       </ul>
@@ -22,17 +22,17 @@
     
     <!-- Calendrier des vaccins -->
     <div class="card">
-      <h2>Vaccins programmés</h2>
+      <h2>{{ $t('vaccins') }}</h2>
       <table class="table">
         <thead>
           <tr>
-            <th>Lot</th>
-            <th>Type de vaccin</th>
-            <th>Date programmée</th>
-            <th>Date effectuée</th>
-            <th>Statut</th>
-            <th>Actions</th>
-          </tr>
+            <th>{{ $t('lot_name') }}</th>
+            <th>{{ $t('vaccine_type') }}</th>
+            <th>{{ $t('scheduled_date') }}</th>
+            <th>{{ $t('performed_date') }}</th>
+            <th>{{ $t('status') }}</th>
+            <th>{{ $t('actions') }}</th>
+           </tr>
         </thead>
         <tbody>
           <tr v-for="vaccin in vaccins" :key="vaccin.id">
@@ -42,16 +42,16 @@
             <td>{{ formatDate(vaccin.date_effectuee) }}</td>
             <td>
               <span :class="vaccin.statut === 'effectue' ? 'badge-success' : 'badge-warning'">
-                {{ vaccin.statut }}
+                {{ vaccin.statut === 'effectue' ? $t('mark_done') : $t('program_vaccine') }}
               </span>
             </td>
             <td>
               <button 
                 v-if="vaccin.statut === 'programme'"
-                class="btn btn-small" 
+                class="btn btn-small btn-success" 
                 @click="marquerEffectue(vaccin.id)"
               >
-                Effectué
+                {{ $t('mark_done') }}
               </button>
             </td>
           </tr>
@@ -62,13 +62,13 @@
     <!-- Modal Ajout Vaccin -->
     <div v-if="showAddModal" class="modal">
       <div class="modal-content">
-        <h2>Programmer un vaccin</h2>
+        <h2>{{ $t('program_vaccine') }}</h2>
         
         <form @submit.prevent="saveVaccin">
           <div class="form-group">
-            <label>Lot *</label>
+            <label>{{ $t('lot_name') }} *</label>
             <select v-model="vaccinForm.lot_id" required>
-              <option value="">Sélectionner un lot</option>
+              <option value="">{{ $t('lot_name') }}</option>
               <option v-for="lot in lots" :key="lot.id" :value="lot.id">
                 {{ lot.nom_lot }} - {{ lot.race }}
               </option>
@@ -76,21 +76,21 @@
           </div>
           
           <div class="form-group">
-            <label>Type de vaccin *</label>
+            <label>{{ $t('vaccine_type') }} *</label>
             <input type="text" v-model="vaccinForm.type_vaccin" required>
           </div>
           
           <div class="form-group">
-            <label>Date programmée *</label>
+            <label>{{ $t('scheduled_date') }} *</label>
             <input type="date" v-model="vaccinForm.date_programmee" required>
           </div>
           
           <div class="modal-actions">
             <button type="button" class="btn btn-danger" @click="showAddModal = false">
-              Annuler
+              {{ $t('delete') }}
             </button>
             <button type="submit" class="btn btn-success">
-              Programmer
+              {{ $t('program_vaccine') }}
             </button>
           </div>
         </form>
@@ -202,6 +202,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 1000;
 }
 
 .modal-content {
@@ -235,6 +236,90 @@ export default {
 
 .btn-small {
   padding: 0.25rem 0.5rem;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 1rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.table th {
+  background: #f8f9fa;
+  font-weight: bold;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-success {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-danger {
+  background: #e74c3c;
+  color: white;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.alert {
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.alert-warning {
+  color: #856404;
+}
+
+.alert ul {
+  margin-left: 1.5rem;
+  margin-top: 0.5rem;
 }
 </style>
