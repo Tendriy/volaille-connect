@@ -25,6 +25,36 @@ class Vente {
         return ventes;
     }
 
+    // Récupérer les ventes par lot
+    static async findByLotId(lotId, userId = null) {
+        let query = `
+            SELECT v.*, l.nom_lot 
+            FROM ventes v 
+            JOIN lots l ON v.lot_id = l.id 
+            WHERE v.lot_id = ?
+        `;
+        const params = [lotId];
+        
+        if (userId) {
+            query += ' AND l.user_id = ?';
+            params.push(userId);
+        }
+        
+        query += ' ORDER BY v.date_vente DESC';
+        
+        const [ventes] = await db.query(query, params);
+        return ventes;
+    }
+
+    // Récupérer le total des ventes d'un lot
+    static async getTotalVendusByLotId(lotId) {
+        const [result] = await db.query(
+            'SELECT SUM(nombre_vendu) as total_vendus FROM ventes WHERE lot_id = ?',
+            [lotId]
+        );
+        return result[0].total_vendus || 0;
+    }
+
     // Calculer le chiffre d'affaires total
     static async getChiffreAffairesTotal(userId) {
         const [result] = await db.query(

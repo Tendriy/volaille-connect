@@ -17,12 +17,12 @@ const addLot = async (req, res) => {
             id: result.insertId
         });
     } catch (error) {
-        console.error(error);
+        console.error('Erreur addLot:', error);
         res.status(500).json({ error: 'Erreur lors de l\'ajout du lot' });
     }
 };
 
-// Lister tous les lots
+// Lister tous les lots avec calculs complets
 const getAllLots = async (req, res) => {
     const userId = req.userId;
 
@@ -34,19 +34,34 @@ const getAllLots = async (req, res) => {
 
         // Ajouter les calculs pour chaque lot
         for (let lot of lots) {
-            // Calculer le total des morts
+            // 1. Calculer le total des morts
             const [morts] = await db.query(
                 'SELECT SUM(mortalite_jour) as total_morts FROM suivi_quotidien WHERE lot_id = ?',
                 [lot.id]
             );
             const totalMorts = morts[0].total_morts || 0;
+            
+            // 2. Calculer le total des ventes
+            const [ventes] = await db.query(
+                'SELECT SUM(nombre_vendu) as total_vendus FROM ventes WHERE lot_id = ?',
+                [lot.id]
+            );
+            const totalVendus = ventes[0].total_vendus || 0;
+            
+            // 3. Calculer le nombre restant
+            const nombreRestant = lot.nombre_initial - totalMorts - totalVendus;
+            
+            // 4. Ajouter toutes les propriétés calculées
+            lot.total_morts = totalMorts;
+            lot.total_vendus = totalVendus;
+            lot.nombre_restant = nombreRestant > 0 ? nombreRestant : 0;
             lot.taux_mortalite = calculTauxMortalite(lot.nombre_initial, totalMorts);
             lot.age = calculerAge(lot.date_arrivee);
         }
 
         res.json(lots);
     } catch (error) {
-        console.error(error);
+        console.error('Erreur getAllLots:', error);
         res.status(500).json({ error: 'Erreur lors de la récupération des lots' });
     }
 };
@@ -74,12 +89,26 @@ const getLotById = async (req, res) => {
             [id]
         );
         const totalMorts = morts[0].total_morts || 0;
+        
+        // Calculer le total des ventes
+        const [ventes] = await db.query(
+            'SELECT SUM(nombre_vendu) as total_vendus FROM ventes WHERE lot_id = ?',
+            [id]
+        );
+        const totalVendus = ventes[0].total_vendus || 0;
+        
+        // Calculer le nombre restant
+        const nombreRestant = lot.nombre_initial - totalMorts - totalVendus;
+        
+        lot.total_morts = totalMorts;
+        lot.total_vendus = totalVendus;
+        lot.nombre_restant = nombreRestant > 0 ? nombreRestant : 0;
         lot.taux_mortalite = calculTauxMortalite(lot.nombre_initial, totalMorts);
         lot.age = calculerAge(lot.date_arrivee);
 
         res.json(lot);
     } catch (error) {
-        console.error(error);
+        console.error('Erreur getLotById:', error);
         res.status(500).json({ error: 'Erreur lors de la récupération du lot' });
     }
 };
@@ -151,7 +180,7 @@ const cloturerLot = async (req, res) => {
     }
 };
 
-// Rechercher des lots (Algorithme 11.3)
+// Rechercher des lots
 const searchLots = async (req, res) => {
     const { q } = req.query;
     const userId = req.userId;

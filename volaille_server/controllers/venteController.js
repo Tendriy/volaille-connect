@@ -17,14 +17,45 @@ const addVente = async (req, res) => {
             return res.status(403).json({ error: 'Lot non autorisé' });
         }
 
+        const lot = lots[0];
+        
+        // Récupérer le total des morts
+        const [morts] = await db.query(
+            'SELECT SUM(mortalite_jour) as total_morts FROM suivi_quotidien WHERE lot_id = ?',
+            [lot_id]
+        );
+        const totalMorts = morts[0].total_morts || 0;
+        
+        // Récupérer le total des ventes déjà effectuées
+        const [ventesExistantes] = await db.query(
+            'SELECT SUM(nombre_vendu) as total_vendus FROM ventes WHERE lot_id = ?',
+            [lot_id]
+        );
+        const totalVendusActuel = ventesExistantes[0].total_vendus || 0;
+        
+        // Calculer le nombre restant
+        const reste = lot.nombre_initial - totalMorts - totalVendusActuel;
+        
+        // Vérifier si la vente est possible
+        if (nombre_vendu > reste) {
+            return res.status(400).json({ 
+                error: `Il ne reste que ${reste} volailles dans ce lot. Impossible de vendre ${nombre_vendu}.` 
+            });
+        }
+
+        // Enregistrer la vente
         const [result] = await db.query(
             'INSERT INTO ventes (lot_id, nombre_vendu, prix_unitaire, date_vente, acheteur) VALUES (?, ?, ?, ?, ?)',
             [lot_id, nombre_vendu, prix_unitaire, date_vente, acheteur]
         );
 
-        res.status(201).json({ message: 'Vente enregistrée avec succès', id: result.insertId });
+        res.status(201).json({ 
+            message: 'Vente enregistrée avec succès', 
+            id: result.insertId,
+            reste_apres_vente: reste - nombre_vendu
+        });
     } catch (error) {
-        console.error(error);
+        console.error('Erreur addVente:', error);
         res.status(500).json({ error: 'Erreur lors de l\'enregistrement de la vente' });
     }
 };
@@ -48,7 +79,7 @@ const getAllVentes = async (req, res) => {
             return total + (vente.nombre_vendu * vente.prix_unitaire);
         }, 0);
 
-        // Calculer ventes mensuelles (Algorithme 11.6)
+        // Calculer ventes mensuelles
         const ventesMensuelles = calculVentesMensuelles(ventes);
 
         res.json({
@@ -57,9 +88,44 @@ const getAllVentes = async (req, res) => {
             ventes_mensuelles: ventesMensuelles
         });
     } catch (error) {
-        console.error(error);
+        console.error('Erreur getAllVentes:', error);
         res.status(500).json({ error: 'Erreur lors de la récupération des ventes' });
     }
 };
 
-module.exports = { addVente, getAllVentes };
+// Récupérer les ventes d'un lot spécifique
+const getVentesByLot = async (req, res) => {
+    const { lot_id } = req.params;
+    const userId = req.userId;
+
+    try {
+        const [lots] = await db.query(
+            'SELECT * FROM lots WHERE id = ? AND user_id = ?',
+            [lot_id, userId]
+        );
+
+        if (lots.length === 0) {
+            return res.status(403).json({ error: 'Lot non autorisé' });
+        }
+
+        const [ventes] = await db.query(
+            `SELECT v.*, l.nom_lot 
+             FROM ventes v 
+             JOIN lots l ON v.lot_id = l.id 
+             WHERE v.lot_id = ?
+             ORDER BY v.date_vente DESC`,
+            [lot_id]
+        );
+
+        res.json(ventes);
+    } catch (error) {
+        console.error('Erreur getVentesByLot:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des ventes du lot' });
+    }
+};
+
+module.exports = { 
+    addVente, 
+    getAllVentes,
+    getVentesByLot
+};

@@ -11,6 +11,7 @@ const suiviRoutes = require('./routes/suiviRoutes');
 const stockRoutes = require('./routes/stockRoutes');
 const vaccinRoutes = require('./routes/vaccinRoutes');
 const venteRoutes = require('./routes/venteRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes'); // <-- AJOUT
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use('/api/suivi', suiviRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/vaccins', vaccinRoutes);
 app.use('/api/ventes', venteRoutes);
+app.use('/api/dashboard', dashboardRoutes); // <-- AJOUT
 
 // Route de test
 app.get('/api/health', (req, res) => {
@@ -42,4 +44,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`🚀 Serveur démarré sur le port ${PORT}`);
     console.log(`📝 API disponible sur http://localhost:${PORT}/api`);
+    console.log(`📊 Dashboard disponible sur http://localhost:${PORT}/api/dashboard`);
 });

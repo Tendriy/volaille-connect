@@ -220,5 +220,15 @@ export default {
   password_strong: 'Tenimiafina matanjaka',
   accept_terms_error: 'Tsy maintsy ekena ny fepetra fampiasana',
   register_success: 'Vita ny fisoratana anarana ! Azonao atao ny miditra izao.',
-  server_error: 'Tsy afaka mifandray amin\'ny serveur. Jereo fa mandeha ny backend'
+  server_error: 'Tsy afaka mifandray amin\'ny serveur. Jereo fa mandeha ny backend',
+  remaining: 'Sisa',
+  sold: 'Efa namidy',
+  dead: 'Maty',
+  cancel: 'Ampio',
+  feed_type: "Karazan-tsakafo",
+  select_feed: "Mifidy sakafo",
+    consumptions: "Fihinanana",
+  consumption_details: "Antsipirihan'ny fihinanana",
+  add_feed: "Hanampy sakafo",
+  select_feed: "Mifidy sakafo",
 }

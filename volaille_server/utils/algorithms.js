@@ -14,12 +14,33 @@ function verifierStock(quantite, seuil) {
 
 // Algorithme 3: Calcul de l'âge des volailles
 function calculerAge(dateArrivee) {
-    const arrivee = new Date(dateArrivee);
-    const aujourdhui = new Date();
-    const diffTime = Math.abs(aujourdhui - arrivee);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    // Créer les objets Date
+    const debut = new Date(dateArrivee);
+    const fin = new Date();
+    
+    // Calculer la différence en millisecondes
+    let difference = fin.getTime() - debut.getTime();
+    
+    // Si la date d'arrivée est après aujourd'hui, inverser
+    if (difference < 0) {
+        difference = debut.getTime() - fin.getTime();
+    }
+    
+    // Convertir millisecondes → secondes → minutes → heures → jours
+    const secondes = difference / 1000;
+    const minutes = secondes / 60;
+    const heures = minutes / 60;
+    const jours = heures / 24;
+    
+    // Arrondir à l'entier supérieur
+    let resultat = parseInt(jours);
+    if (jours > resultat) {
+        resultat = resultat + 1;
+    }
+    
+    return resultat;
 }
+
 
 // Algorithme 4: Calcul de l'indice de consommation
 function calculIndiceConsommation(alimentConsomme, poidsProduit) {

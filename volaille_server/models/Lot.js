@@ -15,7 +15,7 @@ class Lot {
         return result.insertId;
     }
 
-    // Trouver tous les lots d'un utilisateur
+    // Trouver tous les lots d'un utilisateur avec calculs complets
     static async findAllByUser(userId) {
         const [lots] = await db.query(
             'SELECT * FROM lots WHERE user_id = ? ORDER BY created_at DESC',
@@ -24,10 +24,22 @@ class Lot {
 
         // Ajouter les calculs pour chaque lot
         for (let lot of lots) {
+            // Récupérer les statistiques de suivi
             const stats = await Suivi.getStatsByLotId(lot.id);
-            lot.taux_mortalite = calculTauxMortalite(lot.nombre_initial, stats.total_morts || 0);
+            const totalMorts = stats.total_morts || 0;
+            
+            // Récupérer le total des ventes
+            const totalVendus = await Vente.getTotalVendusByLotId(lot.id);
+            
+            // Calculer le nombre restant
+            const nombreRestant = lot.nombre_initial - totalMorts - totalVendus;
+            
+            lot.total_morts = totalMorts;
+            lot.total_vendus = totalVendus;
+            lot.nombre_restant = nombreRestant > 0 ? nombreRestant : 0;
+            lot.taux_mortalite = calculTauxMortalite(lot.nombre_initial, totalMorts);
             lot.age = calculerAge(lot.date_arrivee);
-            lot.total_morts = stats.total_morts || 0;
+            lot.consommation_totale = stats.consommation_totale || 0;
         }
 
         return lots;
@@ -44,9 +56,15 @@ class Lot {
 
         const lot = lots[0];
         const stats = await Suivi.getStatsByLotId(lot.id);
-        lot.taux_mortalite = calculTauxMortalite(lot.nombre_initial, stats.total_morts || 0);
+        const totalMorts = stats.total_morts || 0;
+        const totalVendus = await Vente.getTotalVendusByLotId(lot.id);
+        const nombreRestant = lot.nombre_initial - totalMorts - totalVendus;
+        
+        lot.total_morts = totalMorts;
+        lot.total_vendus = totalVendus;
+        lot.nombre_restant = nombreRestant > 0 ? nombreRestant : 0;
+        lot.taux_mortalite = calculTauxMortalite(lot.nombre_initial, totalMorts);
         lot.age = calculerAge(lot.date_arrivee);
-        lot.total_morts = stats.total_morts || 0;
         lot.consommation_totale = stats.consommation_totale || 0;
 
         return lot;
@@ -60,10 +78,6 @@ class Lot {
         const suivis = await Suivi.findByLotId(id, userId);
         const vaccins = await Vaccin.findByLotId(id, userId);
         const ventes = await Vente.findByLotId(id, userId);
-
-        // Calcul du nombre restant
-        const totalVendus = ventes.reduce((total, vente) => total + vente.nombre_vendu, 0);
-        lot.nombre_restant = lot.nombre_initial - (lot.total_morts || 0) - totalVendus;
 
         return {
             ...lot,
@@ -126,18 +140,13 @@ class Lot {
 
     // Compter le nombre total de volailles actives
     static async countTotalVolailles(userId) {
-        const [lots] = await db.query(
-            'SELECT * FROM lots WHERE user_id = ? AND statut = "actif"',
-            [userId]
-        );
+        const lots = await this.findAllByUser(userId);
         
         let total = 0;
         for (let lot of lots) {
-            const stats = await Suivi.getStatsByLotId(lot.id);
-            const totalMorts = stats.total_morts || 0;
-            const ventes = await Vente.findByLotId(lot.id, userId);
-            const totalVendus = ventes.reduce((sum, v) => sum + v.nombre_vendu, 0);
-            total += lot.nombre_initial - totalMorts - totalVendus;
+            if (lot.statut === 'actif' && lot.nombre_restant > 0) {
+                total += lot.nombre_restant;
+            }
         }
         
         return total;

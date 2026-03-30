@@ -1,6 +1,6 @@
 export default {
   // Navigation
-  app_name: 'VOLAILLE CONNECT',
+  app_name: 'Fiompiana vorona Nohatraraina',
   dashboard: 'Tableau de bord',
   lots: 'Lots',
   stock: 'Stock',
@@ -220,5 +220,15 @@ export default {
   password_strong: 'Mot de passe fort',
   accept_terms_error: 'Vous devez accepter les conditions d\'utilisation',
   register_success: 'Inscription réussie ! Vous pouvez maintenant vous connecter.',
-  server_error: 'Impossible de contacter le serveur. Vérifiez que le backend est démarré'
+  server_error: 'Impossible de contacter le serveur. Vérifiez que le backend est démarré',
+  remaining: 'Restant',
+  sold: 'Vendus',
+  dead: 'Morts',
+  cancel: 'Annuler',
+  feed_type: "Type d'aliment",
+  select_feed: "Sélectionner un aliment",
+    consumptions: "Consommations",
+  consumption_details: "Détails consommation",
+  add_feed: "Ajouter un aliment",
+  select_feed: "Sélectionner un aliment",
 }

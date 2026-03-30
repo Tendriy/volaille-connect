@@ -46,7 +46,13 @@
       <!-- Partie droite - Formulaire -->
       <div class="register-form">
         <div class="form-card">
-          <p class="form-subtitle">{{ $t('register_subtitle') }}</p>
+          <div class="form-header">
+            <div class="form-icon">📝</div>
+            <div>
+              <h2>Créer un compte</h2>
+              <p>{{ $t('register_subtitle') }}</p>
+            </div>
+          </div>
           
           <!-- Message d'erreur -->
           <div v-if="errorMessage" class="error-message-box">
@@ -57,40 +63,50 @@
             <!-- Nom complet -->
             <div class="form-group">
               <label>{{ $t('full_name') }}</label>
-              <input 
-                type="text" 
-                v-model="nom_complet" 
-                :placeholder="$t('full_name')"
-                required
-              >
+              <div class="input-wrap">
+                <span class="input-prefix">👤</span>
+                <input 
+                  type="text" 
+                  v-model="nom_complet" 
+                  :placeholder="$t('full_name')"
+                  required
+                >
+              </div>
             </div>
             
             <!-- Nom d'utilisateur -->
             <div class="form-group">
               <label>{{ $t('username') }}</label>
-              <input 
-                type="text" 
-                v-model="username" 
-                :placeholder="$t('username')"
-                required
-              >
+              <div class="input-wrap">
+                <span class="input-prefix">@</span>
+                <input 
+                  type="text" 
+                  v-model="username" 
+                  :placeholder="$t('username')"
+                  required
+                >
+              </div>
             </div>
             
             <!-- Email -->
             <div class="form-group">
               <label>{{ $t('email') }}</label>
-              <input 
-                type="email" 
-                v-model="email" 
-                :placeholder="$t('email')"
-                required
-              >
+              <div class="input-wrap">
+                <span class="input-prefix">📧</span>
+                <input 
+                  type="email" 
+                  v-model="email" 
+                  :placeholder="$t('email')"
+                  required
+                >
+              </div>
             </div>
             
             <!-- Mot de passe -->
             <div class="form-group">
               <label>{{ $t('password') }}</label>
-              <div class="password-input">
+              <div class="input-wrap">
+                <span class="input-prefix">🔒</span>
                 <input 
                   :type="showPassword ? 'text' : 'password'" 
                   v-model="password" 
@@ -111,7 +127,8 @@
             <!-- Confirmer mot de passe -->
             <div class="form-group">
               <label>{{ $t('confirm_password') }}</label>
-              <div class="password-input">
+              <div class="input-wrap">
+                <span class="input-prefix">🔒</span>
                 <input 
                   :type="showConfirmPassword ? 'text' : 'password'" 
                   v-model="confirmPassword" 
@@ -142,7 +159,7 @@
               :disabled="loading || !acceptTerms || password !== confirmPassword || !password"
             >
               <span v-if="loading">{{ $t('loading') }}</span>
-              <span v-else>{{ $t('register') }}</span>
+              <span v-else>🚀 {{ $t('register') }}</span>
             </button>
           </form>
           
@@ -252,9 +269,35 @@ export default {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --amber:       #D97706;
+  --amber-light: #F59E0B;
+  --amber-pale:  #FFFBEB;
+  --amber-mid:   #FDE68A;
+  --wheat:       #FEF3C7;
+  --green:       #15803D;
+  --green-light: #F0FDF4;
+  --terra:       #C2410C;
+  --cream:       #FFFDF5;
+  --parchment:   #FDF6E3;
+  --ink:         #292524;
+  --ink-soft:    #78716C;
+  --ink-muted:   #A8A29E;
+  --border:      rgba(180,120,50,0.14);
+  --radius:      16px;
+  --radius-sm:   10px;
+  --shadow:      0 2px 16px rgba(120,80,20,0.08);
+  --shadow-lg:   0 8px 40px rgba(120,80,20,0.16);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
 .register-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #78350F 0%, #92400E 50%, #A16207 100%);
+  font-family: 'DM Sans', sans-serif;
 }
 
 .register-wrapper {
@@ -262,18 +305,36 @@ export default {
   min-height: 100vh;
 }
 
+/* ============================================================
+   PARTIE GAUCHE - INFORMATIONS (STYLE ORANGE)
+   ============================================================ */
 .register-info {
   flex: 1;
-  background: linear-gradient(135deg, rgba(39,174,96,0.95) 0%, rgba(44,62,80,0.95) 100%);
+  background: linear-gradient(135deg, rgba(120,53,15,0.95) 0%, rgba(146,64,14,0.95) 50%, rgba(161,98,7,0.95) 100%);
   padding: 50px;
   color: white;
   display: flex;
   align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-info::after {
+  content: '🐔';
+  position: absolute;
+  font-size: 200px;
+  opacity: 0.05;
+  right: -50px;
+  bottom: -50px;
+  transform: rotate(-15deg);
+  pointer-events: none;
 }
 
 .info-content {
   max-width: 500px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
 .back-home {
@@ -281,15 +342,18 @@ export default {
 }
 
 .back-link {
-  color: white;
+  color: rgba(254,243,199,0.8);
   text-decoration: none;
-  opacity: 0.8;
-  transition: opacity 0.3s;
+  transition: all 0.3s;
   font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .back-link:hover {
-  opacity: 1;
+  color: #FEF3C7;
+  transform: translateX(-3px);
 }
 
 .logo {
@@ -304,14 +368,18 @@ export default {
 }
 
 .logo h2 {
+  font-family: 'Playfair Display', serif;
   font-size: 1.5rem;
   margin: 0;
-  color: white;
+  color: #FEF3C7;
+  font-style: italic;
 }
 
 .register-info h1 {
+  font-family: 'Playfair Display', serif;
   font-size: 2.5rem;
   margin-bottom: 20px;
+  color: #FEF3C7;
 }
 
 .register-info p {
@@ -319,6 +387,7 @@ export default {
   margin-bottom: 30px;
   opacity: 0.9;
   line-height: 1.6;
+  color: rgba(254,243,199,0.85);
 }
 
 .features-list {
@@ -331,6 +400,7 @@ export default {
   gap: 12px;
   margin-bottom: 12px;
   font-size: 0.95rem;
+  color: rgba(254,243,199,0.9);
 }
 
 .feature-check {
@@ -339,83 +409,149 @@ export default {
   justify-content: center;
   width: 20px;
   height: 20px;
-  background: rgba(255,255,255,0.2);
+  background: rgba(254,243,199,0.2);
   border-radius: 50%;
   font-weight: bold;
   font-size: 0.8rem;
+  color: #FEF3C7;
 }
 
+/* ============================================================
+   PARTIE DROITE - FORMULAIRE (STYLE VENTES)
+   ============================================================ */
 .register-form {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 50px;
-  background: white;
+  background: var(--cream);
 }
 
 .form-card {
-  max-width: 450px;
+  max-width: 500px;
   width: 100%;
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.form-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 1.5rem 1.8rem 1rem;
+  background: linear-gradient(135deg, #78350F 0%, #92400E 50%, #A16207 100%);
+}
+
+.form-icon {
+  width: 50px;
+  height: 50px;
+  background: rgba(254,243,199,0.15);
+  border: 1px solid rgba(254,243,199,0.25);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.form-header h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #FEF3C7;
+  font-style: italic;
+  margin-bottom: 2px;
+}
+
+.form-header p {
+  font-size: 12px;
+  color: rgba(254,243,199,0.6);
+  margin: 0;
 }
 
 .form-subtitle {
   text-align: center;
-  color: #666;
+  color: var(--ink-soft);
   margin-bottom: 30px;
   font-size: 0.9rem;
 }
 
 .error-message-box {
-  background: #fff3cd;
-  border: 1px solid #ffeeba;
-  color: #856404;
-  padding: 10px;
-  border-radius: 5px;
-  margin-bottom: 20px;
-  text-align: center;
-  font-size: 0.9rem;
+  background: #FFF1EE;
+  border-left: 4px solid var(--terra);
+  color: var(--terra);
+  padding: 12px 16px;
+  margin: 1rem 1.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+/* Formulaire */
+form {
+  padding: 1.5rem 1.8rem;
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .form-group label {
+  display: block;
+  margin-bottom: 7px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+}
+
+.input-wrap {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #2c3e50;
-  font-size: 0.9rem;
 }
 
-.form-group input[type="text"],
-.form-group input[type="email"],
-.form-group input[type="password"] {
+.input-prefix {
+  position: absolute;
+  left: 12px;
+  font-size: 14px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.input-wrap input {
   width: 100%;
-  padding: 10px 12px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  transition: all 0.3s;
-  font-family: inherit;
-}
-
-.form-group input:focus {
+  padding: 12px 12px 12px 42px;
+  border: 1.5px solid rgba(180,120,50,0.22);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--ink);
+  background: white;
   outline: none;
-  border-color: #27ae60;
-  box-shadow: 0 0 0 3px rgba(39,174,96,0.1);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
+.input-wrap input::placeholder {
+  color: var(--ink-muted);
+}
+
+.input-wrap input:focus {
+  border-color: var(--amber-light);
+  box-shadow: 0 0 0 3px rgba(245,158,11,0.10);
+}
+
+/* Password input avec bouton toggle */
 .password-input {
   position: relative;
 }
 
 .password-input input {
-  width: 100%;
-  padding-right: 40px;
+  padding-right: 45px;
 }
 
 .toggle-password {
@@ -426,15 +562,18 @@ export default {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 1.1rem;
+  font-size: 1rem;
   padding: 0;
   opacity: 0.6;
+  transition: opacity 0.2s;
+  z-index: 2;
 }
 
 .toggle-password:hover {
   opacity: 1;
 }
 
+/* Force de mot de passe */
 .password-strength {
   margin-top: 8px;
 }
@@ -449,50 +588,54 @@ export default {
 
 .strength-weak {
   width: 33%;
-  background: #e74c3c;
+  background: var(--terra);
 }
 
 .strength-medium {
   width: 66%;
-  background: #f39c12;
+  background: var(--amber-light);
 }
 
 .strength-strong {
   width: 100%;
-  background: #27ae60;
+  background: var(--green);
 }
 
 .strength-text {
   font-size: 0.7rem;
-  color: #888;
+  color: var(--ink-muted);
 }
 
 .error-message {
-  color: #e74c3c;
+  color: var(--terra);
   font-size: 0.75rem;
   margin-top: 5px;
 }
 
+/* Checkbox */
 .checkbox {
-  margin-top: 20px;
-  margin-bottom: 25px;
+  margin: 20px 0 25px;
 }
 
 .checkbox label {
   display: flex;
+  align-items: center;
   gap: 10px;
   font-weight: normal;
   cursor: pointer;
   font-size: 0.85rem;
+  color: var(--ink-soft);
 }
 
 .checkbox input {
-  margin-top: 2px;
-  width: auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
 }
 
 .checkbox a {
-  color: #27ae60;
+  color: var(--amber);
   text-decoration: none;
 }
 
@@ -500,45 +643,50 @@ export default {
   text-decoration: underline;
 }
 
+/* Bouton d'inscription */
 .btn-register {
   width: 100%;
   padding: 12px;
-  background: #27ae60;
+  background: linear-gradient(135deg, #D97706, #B45309);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 100px;
   font-size: 1rem;
   font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 3px 12px rgba(180,83,9,0.28);
+  margin-bottom: 20px;
 }
 
 .btn-register:hover:not(:disabled) {
-  background: #229954;
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(39,174,96,0.3);
+  box-shadow: 0 6px 20px rgba(180,83,9,0.38);
 }
 
 .btn-register:disabled {
   background: #ccc;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
+/* Footer */
 .form-footer {
   text-align: center;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #e0e0e0;
+  padding: 1rem 1.5rem 1.5rem;
+  border-top: 1px solid var(--border);
+  background: #fafafa;
 }
 
 .form-footer p {
-  font-size: 0.9rem;
-  color: #666;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
 }
 
 .form-footer a {
-  color: #27ae60;
+  color: var(--amber);
   text-decoration: none;
   font-weight: 600;
 }
@@ -547,13 +695,16 @@ export default {
   text-decoration: underline;
 }
 
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
 @media (max-width: 768px) {
   .register-wrapper {
     flex-direction: column;
   }
   
   .register-info {
-    padding: 40px 20px;
+    padding: 40px 24px;
   }
   
   .register-form {
@@ -572,8 +723,16 @@ export default {
     font-size: 0.85rem;
   }
   
-  .form-subtitle {
-    font-size: 0.85rem;
+  form {
+    padding: 1rem 1.2rem;
+  }
+  
+  .form-header {
+    padding: 1rem 1.2rem;
+  }
+  
+  .error-message-box {
+    margin: 0.8rem 1.2rem;
   }
 }
 </style>
