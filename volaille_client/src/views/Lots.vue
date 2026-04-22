@@ -8,9 +8,14 @@
         <h1 class="page-title">{{ $t('lots') }}</h1>
         <p class="page-sub">{{ lots.length }} lot{{ lots.length > 1 ? 's' : '' }} enregistré{{ lots.length > 1 ? 's' : '' }}</p>
       </div>
-      <button class="btn-new" @click="showAddModal = true">
-        ➕ {{ $t('new_lot') }}
-      </button>
+      <div class="header-buttons">
+        <button class="btn-fusion" @click="fusionnerLots" title="Fusionner les lots en double">
+          🔗 Fusionner
+        </button>
+        <button class="btn-new" @click="openAddModal">
+          ➕ {{ $t('new_lot') }}
+        </button>
+      </div>
     </div>
 
     <!-- ===== BARRE DE RECHERCHE ===== -->
@@ -91,7 +96,7 @@
                 <div class="empty-state">
                   <span class="empty-icon">📭</span>
                   <p>{{ recherche ? 'Aucun lot ne correspond à votre recherche' : 'Aucun lot enregistré' }}</p>
-                  <button v-if="!recherche" class="btn-new-sm" @click="showAddModal = true">
+                  <button v-if="!recherche" class="btn-new-sm" @click="openAddModal">
                     ➕ Créer le premier lot
                   </button>
                 </div>
@@ -193,7 +198,9 @@ export default {
       }
     }
   },
-  mounted() { this.loadLots() },
+  mounted() { 
+    this.loadLots() 
+  },
   methods: {
     async loadLots() {
       try {
@@ -205,13 +212,18 @@ export default {
         alert('Erreur lors du chargement des lots')
       }
     },
+    
     getRestantClass(n) {
       if (n <= 0) return 'restant-zero'
       if (n < 10) return 'restant-low'
       return 'restant-ok'
     },
+    
     rechercherLots() {
-      if (!this.recherche) { this.lotsFiltres = this.lots; return }
+      if (!this.recherche) { 
+        this.lotsFiltres = this.lots
+        return 
+      }
       const kw = this.recherche.toLowerCase()
       this.lotsFiltres = this.lots.filter(l =>
         (l.nom_lot && l.nom_lot.toLowerCase().includes(kw)) ||
@@ -219,30 +231,103 @@ export default {
         (l.fournisseur && l.fournisseur.toLowerCase().includes(kw))
       )
     },
+    
+    openAddModal() {
+      this.editingLot = null
+      this.lotForm = {
+        nom_lot: '',
+        race: '',
+        fournisseur: '',
+        nombre_initial: '',
+        date_arrivee: new Date().toISOString().split('T')[0]
+      }
+      this.showAddModal = true
+    },
+    
     async saveLot() {
+      if (!this.lotForm.nom_lot) {
+        alert('Veuillez saisir un nom de lot')
+        return
+      }
+      if (!this.lotForm.nombre_initial || this.lotForm.nombre_initial <= 0) {
+        alert('Veuillez saisir un nombre initial valide')
+        return
+      }
+      if (!this.lotForm.date_arrivee) {
+        alert('Veuillez saisir une date d\'arrivée')
+        return
+      }
+
       try {
-        if (this.editingLot) {
-          await api.put(`/lots/${this.editingLot.id}`, this.lotForm)
-        } else {
-          await api.post('/lots', this.lotForm)
+        const dataToSend = {
+          nom_lot: this.lotForm.nom_lot,
+          race: this.lotForm.race || null,
+          fournisseur: this.lotForm.fournisseur || null,
+          nombre_initial: parseInt(this.lotForm.nombre_initial),
+          date_arrivee: this.lotForm.date_arrivee
         }
+
+        if (this.editingLot) {
+          await api.put(`/lots/${this.editingLot.id}`, dataToSend)
+          alert('✅ Lot modifié avec succès')
+        } else {
+          const response = await api.post('/lots', dataToSend)
+          
+          if (response.data.updated) {
+            alert(`✅ ${response.data.message}`)
+          } else {
+            alert('✅ Lot ajouté avec succès')
+          }
+        }
+        
         this.closeModal()
-        this.loadLots()
+        await this.loadLots()
       } catch (e) {
         console.error(e)
-        alert('Erreur lors de la sauvegarde du lot')
+        const errorMsg = e.response?.data?.error || '❌ Erreur lors de la sauvegarde'
+        alert(errorMsg)
       }
     },
+    
+    async fusionnerLots() {
+      if (confirm('Fusionner tous les lots avec le même nom et la même race ?')) {
+        try {
+          const response = await api.post('/lots/fusionner')
+          alert(response.data.message)
+          await this.loadLots()
+        } catch (e) {
+          console.error(e)
+          alert('Erreur lors de la fusion des lots')
+        }
+      }
+    },
+    
     async confirmerSuppression(lot) {
       if (confirm(`Supprimer le lot "${lot.nom_lot}" ?`)) {
-        try { await api.delete(`/lots/${lot.id}`); this.loadLots() }
-        catch (e) { console.error(e); alert('Erreur lors de la suppression') }
+        try { 
+          await api.delete(`/lots/${lot.id}`)
+          await this.loadLots()
+          alert('✅ Lot supprimé avec succès')
+        } catch (e) { 
+          console.error(e)
+          alert('Erreur lors de la suppression')
+        }
       }
     },
-    voirLot(id) { this.$router.push(`/lots/${id}`) },
+    
+    voirLot(id) { 
+      this.$router.push(`/lots/${id}`) 
+    },
+    
     closeModal() {
       this.showAddModal = false
-      this.lotForm = { nom_lot: '', race: '', fournisseur: '', nombre_initial: '', date_arrivee: '' }
+      this.lotForm = {
+        nom_lot: '',
+        race: '',
+        fournisseur: '',
+        nombre_initial: '',
+        date_arrivee: ''
+      }
       this.editingLot = null
     }
   }
@@ -293,9 +378,7 @@ export default {
   color: var(--ink);
 }
 
-/* ============================================================
-   HEADER
-   ============================================================ */
+/* ===== HEADER ===== */
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -307,6 +390,16 @@ export default {
   box-shadow: 0 4px 20px rgba(120,50,10,0.18);
   flex-wrap: wrap;
   gap: 1rem;
+}
+
+.header-left {
+  flex: 1;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 .page-eyebrow {
@@ -347,7 +440,6 @@ export default {
   transition: transform 0.2s, box-shadow 0.2s;
   box-shadow: 0 3px 12px rgba(245,158,11,0.30);
   white-space: nowrap;
-  align-self: center;
 }
 
 .btn-new:hover {
@@ -355,9 +447,27 @@ export default {
   box-shadow: 0 8px 22px rgba(245,158,11,0.40);
 }
 
-/* ============================================================
-   BARRE DE RECHERCHE
-   ============================================================ */
+.btn-fusion {
+  background: var(--green);
+  color: white;
+  border: none;
+  padding: 11px 24px;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 3px 12px rgba(21,128,61,0.30);
+  white-space: nowrap;
+}
+
+.btn-fusion:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(21,128,61,0.40);
+}
+
+/* ===== BARRE DE RECHERCHE ===== */
 .search-bar-wrap {
   margin-bottom: 1.4rem;
 }
@@ -418,9 +528,7 @@ export default {
   padding-left: 16px;
 }
 
-/* ============================================================
-   TABLE CARD
-   ============================================================ */
+/* ===== TABLE CARD ===== */
 .table-card {
   background: white;
   border: 1px solid var(--border);
@@ -461,7 +569,6 @@ export default {
 
 .text-center { text-align: center; }
 
-/* Cellules spéciales */
 .td-name {
   font-weight: 600;
   color: var(--ink);
@@ -544,7 +651,6 @@ export default {
   font-weight: 600;
 }
 
-/* Boutons action */
 .action-btns {
   display: flex;
   align-items: center;
@@ -572,7 +678,6 @@ export default {
 .btn-view:hover   { background: var(--amber-mid); transform: scale(1.1); }
 .btn-delete:hover { background: #FECACA; transform: scale(1.1); }
 
-/* Empty state */
 .empty-row { text-align: center; padding: 3rem !important; }
 
 .empty-state {
@@ -606,9 +711,7 @@ export default {
 
 .btn-new-sm:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(180,83,9,0.35); }
 
-/* ============================================================
-   MODAL
-   ============================================================ */
+/* ===== MODAL ===== */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -784,12 +887,12 @@ export default {
 
 .btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(180,83,9,0.38); }
 
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
+/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .lots-container { padding: 0 1rem; margin: 1rem auto; }
   .page-header { flex-direction: column; align-items: flex-start; }
+  .header-buttons { margin-top: 10px; width: 100%; }
+  .btn-fusion, .btn-new { flex: 1; text-align: center; }
   .form-row { grid-template-columns: 1fr; }
   .modal-box { max-width: 100%; }
   .td-name { white-space: normal; }

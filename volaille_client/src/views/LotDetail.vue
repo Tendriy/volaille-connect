@@ -23,7 +23,7 @@
       <div class="card-title-row">
         <h2>ℹ️ {{ $t('general_info') }}</h2>
         <div class="actions" v-if="lot.statut === 'actif'">
-          <button class="btn-primary" @click="showSuiviModal = true">
+          <button class="btn-primary" @click="openModal">
             ➕ {{ $t('add_followup') }}
           </button>
           <button class="btn-warn" @click="cloturerLot">
@@ -94,8 +94,8 @@
               </td>
               <td class="consumption-details-cell">
                 <div v-if="suivi.consommations" class="consumption-details">
-                  <span v-for="(c, idx) in JSON.parse(suivi.consommations)" :key="idx" class="consumption-badge">
-                    {{ c.type_aliment }}: {{ c.quantite }} kg
+                  <span v-for="(c, idx) in getConsommations(suivi.consommations)" :key="idx" class="consumption-badge">
+                    {{ c.type_aliment }}: {{ c.quantite }} {{ c.unite || 'kg' }}
                   </span>
                 </div>
                 <span v-else class="text-muted">—</span>
@@ -120,7 +120,6 @@
     <!-- ===== MODAL AJOUT SUIVI ===== -->
     <div v-if="showSuiviModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal-box">
-
         <div class="modal-header">
           <div class="modal-logo">📈</div>
           <div>
@@ -131,7 +130,6 @@
         </div>
 
         <form @submit.prevent="saveSuivi" class="modal-form">
-
           <!-- Date -->
           <div class="form-group">
             <label>{{ $t('date') }} <span class="required">*</span></label>
@@ -171,25 +169,24 @@
                 :key="index"
                 class="consumption-row"
               >
-                <select v-model="item.type_aliment" class="consumption-select" required>
+                <select v-model="item.selectedStockId" class="consumption-select" @change="onStockSelect(index, item.selectedStockId)" required>
                   <option value="">— {{ $t('select_feed') }} —</option>
-                  <option
-                    v-for="stock in stocks"
-                    :key="stock.id"
-                    :value="stock.type_aliment"
-                    :class="{ 'stock-low': stock.quantite <= stock.seuil_alerte }"
-                  >
-                    {{ stock.type_aliment }} ({{ stock.quantite }} {{ stock.unite }})
+                  <option v-for="stock in stocks" :key="stock.id" :value="stock.id">
+                    {{ stock.type_aliment }} ({{ parseFloat(stock.quantite).toFixed(2) }} {{ stock.unite }}) - seuil: {{ parseFloat(stock.seuil_alerte).toFixed(2) }} kg
                   </option>
                 </select>
                 <input
                   type="number"
                   step="0.01"
                   v-model="item.quantite"
-                  placeholder="kg"
+                  placeholder="Quantité"
                   min="0"
                   class="consumption-qty"
                 />
+                <select v-model="item.unite" class="consumption-unit">
+                  <option value="kg">kg</option>
+                  <option value="sac">sac</option>
+                </select>
                 <button type="button" class="btn-remove" @click="removeConsumption(index)" title="Supprimer">✕</button>
               </div>
             </div>
@@ -198,7 +195,7 @@
             </button>
           </div>
 
-          <!-- Alertes stock -->
+          <!-- Alertes stock - CORRIGÉ -->
           <div v-if="stockWarnings.length > 0" class="alert-warning-box">
             <div v-for="warning in stockWarnings" :key="warning.type" class="warning-row">
               ⚠️ {{ warning.message }}
@@ -216,7 +213,6 @@
             <button type="button" class="btn-cancel" @click="closeModal">{{ $t('cancel') }}</button>
             <button type="submit" class="btn-save">💾 {{ $t('save') }}</button>
           </div>
-
         </form>
       </div>
     </div>
@@ -244,20 +240,57 @@ export default {
     }
   },
   computed: {
-    canSubmit() { return true },
+    // Calcul des alertes stock - CORRIGÉ avec conversion kg/sac
     stockWarnings() {
       const warnings = []
       for (let item of this.suiviForm.consumptions) {
-        if (!item.type_aliment || !item.quantite || item.quantite <= 0) continue
-        const stock = this.stocks.find(s => s.type_aliment === item.type_aliment)
-        if (stock) {
-          if (stock.quantite < item.quantite) {
-            warnings.push({ type: item.type_aliment, message: `Stock insuffisant pour "${item.type_aliment}" ! Reste : ${stock.quantite} ${stock.unite}` })
-          } else if (stock.quantite - item.quantite <= stock.seuil_alerte) {
-            warnings.push({ type: item.type_aliment, message: `Après consommation, "${item.type_aliment}" sera en stock faible (${stock.quantite - item.quantite} ${stock.unite})` })
+        if (!item.selectedStockId || !item.quantite || parseFloat(item.quantite) <= 0) continue
+        
+        const stock = this.stocks.find(s => s.id === item.selectedStockId)
+        if (!stock) continue
+        
+        const quantiteConsommee = parseFloat(item.quantite)
+        
+        // Stock actuel en kg (toujours)
+        let stockActuelKg = parseFloat(stock.quantite)
+        if (stock.unite === 'sac') {
+          stockActuelKg = stockActuelKg * 50
+        }
+        
+        // Seuil d'alerte en kg
+        let seuilAlerteKg = parseFloat(stock.seuil_alerte)
+        if (isNaN(seuilAlerteKg)) seuilAlerteKg = 50
+        
+        // Quantité consommée en kg (toujours)
+        let quantiteConsommeeKg = quantiteConsommee
+        if (item.unite === 'sac') {
+          quantiteConsommeeKg = quantiteConsommee * 50
+        }
+        
+        // Vérifier si stock suffisant
+        if (stockActuelKg < quantiteConsommeeKg) {
+          warnings.push({ 
+            type: stock.type_aliment, 
+            message: `Stock insuffisant pour "${stock.type_aliment}" ! Reste : ${stockActuelKg.toFixed(2)} kg, consommation : ${quantiteConsommeeKg.toFixed(2)} kg` 
+          })
+        }
+        // Vérifier si après consommation le stock sera faible
+        else {
+          const resteKg = stockActuelKg - quantiteConsommeeKg
+          if (resteKg <= seuilAlerteKg) {
+            let resteAffiche = resteKg.toFixed(2)
+            let uniteAffiche = 'kg'
+            
+            if (resteKg >= 50) {
+              resteAffiche = (resteKg / 50).toFixed(2)
+              uniteAffiche = 'sac'
+            }
+            
+            warnings.push({ 
+              type: stock.type_aliment, 
+              message: `Après consommation, "${stock.type_aliment}" sera en stock faible (${resteAffiche} ${uniteAffiche})` 
+            })
           }
-        } else if (item.type_aliment) {
-          warnings.push({ type: item.type_aliment, message: `"${item.type_aliment}" n'existe pas dans le stock.` })
         }
       }
       return warnings
@@ -270,60 +303,220 @@ export default {
   },
   methods: {
     async loadLot() {
-      try { const r = await api.get(`/lots/${this.$route.params.id}`); this.lot = r.data }
-      catch (e) { console.error(e) }
+      try { 
+        const r = await api.get(`/lots/${this.$route.params.id}`)
+        this.lot = r.data 
+      } catch (e) { 
+        console.error('Erreur chargement lot:', e)
+      }
     },
+    
     async loadSuivis() {
-      try { const r = await api.get(`/suivi/lot/${this.$route.params.id}`); this.suivis = r.data }
-      catch (e) { console.error(e) }
+      try { 
+        const r = await api.get(`/suivi/lot/${this.$route.params.id}`)
+        this.suivis = r.data 
+      } catch (e) { 
+        console.error('Erreur chargement suivis:', e)
+      }
     },
+    
     async loadStocks() {
-      try { const r = await api.get('/stock'); this.stocks = r.data }
-      catch (e) { console.error(e) }
+      try { 
+        const r = await api.get('/stock')
+        this.stocks = r.data
+        console.log('Stocks chargés:', this.stocks.length, 'articles')
+      } catch (e) { 
+        console.error('Erreur chargement stocks:', e)
+      }
     },
-    addConsumption() { this.suiviForm.consumptions.push({ type_aliment: '', quantite: '' }) },
-    removeConsumption(i) { this.suiviForm.consumptions.splice(i, 1) },
+    
+    addConsumption() {
+      this.suiviForm.consumptions.push({ selectedStockId: '', quantite: '', unite: 'kg', type_aliment: '' })
+    },
+    
+    removeConsumption(i) {
+      this.suiviForm.consumptions.splice(i, 1)
+    },
+    
+    onStockSelect(index, stockId) {
+      const stock = this.stocks.find(s => s.id === stockId)
+      if (stock) {
+        this.suiviForm.consumptions[index].type_aliment = stock.type_aliment
+        // Par défaut, l'unité de consommation est kg
+        this.suiviForm.consumptions[index].unite = 'kg'
+      }
+    },
+    
+    getConsommations(consommationsStr) {
+      try { 
+        return JSON.parse(consommationsStr) 
+      } catch(e) { 
+        return [] 
+      }
+    },
+    
+    openModal() {
+      this.suiviForm = {
+        date_suivi: new Date().toISOString().split('T')[0],
+        temperature: '',
+        consumptions: [],
+        mortalite_jour: 0,
+        observations: ''
+      }
+      this.showSuiviModal = true
+    },
+    
     async saveSuivi() {
-      const valid = this.suiviForm.consumptions.filter(c => c.type_aliment && c.quantite > 0)
-      const total = valid.reduce((s, c) => s + (parseFloat(c.quantite) || 0), 0)
+      if (!this.suiviForm.date_suivi) { 
+        alert('Veuillez saisir une date')
+        return 
+      }
+      
+      const validConsumptions = []
+      let totalEnKg = 0
+      
+      for (let item of this.suiviForm.consumptions) {
+        if (!item.selectedStockId || !item.quantite || parseFloat(item.quantite) <= 0) continue
+        
+        const stock = this.stocks.find(s => s.id === item.selectedStockId)
+        if (!stock) continue
+        
+        const quantite = parseFloat(item.quantite)
+        
+        // Convertir la quantité consommée en kg
+        let quantiteEnKg = quantite
+        if (item.unite === 'sac') {
+          quantiteEnKg = quantite * 50
+        }
+        
+        totalEnKg += quantiteEnKg
+        
+        validConsumptions.push({
+          stock_id: stock.id,
+          type_aliment: stock.type_aliment,
+          quantite: quantite,
+          unite: item.unite,
+          quantite_kg: quantiteEnKg
+        })
+        
+        // Vérifier le stock (tout en kg)
+        let stockActuelKg = parseFloat(stock.quantite)
+        if (stock.unite === 'sac') {
+          stockActuelKg = stockActuelKg * 50
+        }
+        
+        if (stockActuelKg < quantiteEnKg) {
+          alert(`❌ Stock insuffisant pour "${stock.type_aliment}" ! Vous avez ${stockActuelKg.toFixed(2)} kg, vous consommez ${quantiteEnKg.toFixed(2)} kg`)
+          return
+        }
+      }
+      
+      // Mettre à jour les stocks
+      for (let item of validConsumptions) {
+        const stock = this.stocks.find(s => s.id === item.stock_id)
+        if (stock) {
+          let stockActuelKg = parseFloat(stock.quantite)
+          if (stock.unite === 'sac') {
+            stockActuelKg = stockActuelKg * 50
+          }
+          
+          let nouveauStockKg = stockActuelKg - item.quantite_kg
+          
+          // Reconversion dans l'unité d'origine du stock
+          let nouvelleQuantite = nouveauStockKg
+          if (stock.unite === 'sac') {
+            nouvelleQuantite = nouveauStockKg / 50
+          }
+          
+          await api.put(`/stock/${stock.id}`, {
+            ...stock,
+            quantite: nouvelleQuantite
+          })
+        }
+      }
+      
       try {
-        await api.post('/suivi', {
+        const dataToSend = {
           lot_id: this.$route.params.id,
           date_suivi: this.suiviForm.date_suivi,
-          temperature: this.suiviForm.temperature,
-          consommation_aliment: total,
-          consommations: JSON.stringify(valid),
-          mortalite_jour: this.suiviForm.mortalite_jour,
-          observations: this.suiviForm.observations
-        })
-        this.closeModal(); this.loadSuivis(); this.loadLot(); this.loadStocks()
+          temperature: this.suiviForm.temperature ? parseFloat(this.suiviForm.temperature) : null,
+          consommation_aliment: totalEnKg,
+          consommations: JSON.stringify(validConsumptions.map(c => ({ 
+            type_aliment: c.type_aliment, 
+            quantite: c.quantite, 
+            unite: c.unite 
+          }))),
+          mortalite_jour: parseInt(this.suiviForm.mortalite_jour) || 0,
+          observations: this.suiviForm.observations || ''
+        }
+        
+        await api.post('/suivi', dataToSend)
+        this.closeModal()
+        await this.loadSuivis()
+        await this.loadLot()
+        await this.loadStocks()
         alert('✅ Suivi ajouté avec succès')
       } catch (e) {
+        console.error(e)
         alert(e.response?.data?.error || '❌ Erreur lors de la sauvegarde')
       }
     },
+    
     async cloturerLot() {
       if (confirm('Voulez-vous vraiment clôturer ce lot ?')) {
-        try { await api.put(`/lots/${this.$route.params.id}/cloturer`); this.loadLot() }
-        catch (e) { console.error(e) }
+        try { 
+          await api.put(`/lots/${this.$route.params.id}/cloturer`)
+          await this.loadLot() 
+        } catch (e) { 
+          console.error(e)
+        }
       }
     },
-    formatDate(d) { return new Date(d).toLocaleDateString('fr-FR') },
+    
+    formatDate(d) { 
+      return d ? new Date(d).toLocaleDateString('fr-FR') : '—' 
+    },
+    
     getTauxMortaliteClass(t) {
-      if (!t) return 'taux-faible'
+      if (!t || t === 0) return 'taux-faible'
       if (t > 10) return 'taux-eleve'
       if (t > 5) return 'taux-moyen'
       return 'taux-faible'
     },
+    
     closeModal() {
       this.showSuiviModal = false
-      this.suiviForm = { date_suivi: new Date().toISOString().split('T')[0], temperature: '', consumptions: [], mortalite_jour: 0, observations: '' }
+      this.suiviForm = {
+        date_suivi: new Date().toISOString().split('T')[0],
+        temperature: '',
+        consumptions: [],
+        mortalite_jour: 0,
+        observations: ''
+      }
     }
   }
 }
 </script>
 
 <style scoped>
+/* Style pour le selecteur d'unité */
+.consumption-unit {
+  width: 70px;
+  padding: 9px 10px;
+  border: 1.5px solid rgba(180,120,50,0.20);
+  border-radius: var(--radius-sm);
+  background: white;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--ink);
+  outline: none;
+  cursor: pointer;
+}
+
+.consumption-unit:focus {
+  border-color: var(--amber);
+}
+
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
 
 :root {
@@ -364,9 +557,7 @@ export default {
   color: var(--ink);
 }
 
-/* ============================================================
-   HEADER
-   ============================================================ */
+/* ===== HEADER ===== */
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -455,9 +646,7 @@ export default {
   border: 1px solid rgba(217,119,6,0.18);
 }
 
-/* ============================================================
-   CARD BASE
-   ============================================================ */
+/* ===== CARD BASE ===== */
 .info-card,
 .table-card {
   background: white;
@@ -495,7 +684,6 @@ export default {
   border: 1px solid rgba(217,119,6,0.15);
 }
 
-/* Actions row */
 .actions {
   display: flex;
   gap: 10px;
@@ -539,9 +727,7 @@ export default {
   border-color: var(--terra);
 }
 
-/* ============================================================
-   INFO GRID
-   ============================================================ */
+/* ===== INFO GRID ===== */
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -577,9 +763,7 @@ export default {
 .taux-moyen  { color: var(--amber);  font-weight: 700; }
 .taux-eleve  { color: var(--terra);  font-weight: 700; }
 
-/* ============================================================
-   TABLE
-   ============================================================ */
+/* ===== TABLE ===== */
 .table-responsive { overflow-x: auto; }
 
 .table {
@@ -613,7 +797,7 @@ export default {
 .text-muted { color: var(--ink-muted); font-size: 13px; }
 
 .temp-pill {
-  background: var(--sky-light, #E0F2FE);
+  background: #E0F2FE;
   color: #0369A1;
   padding: 3px 10px;
   border-radius: 20px;
@@ -651,9 +835,7 @@ export default {
   font-size: 14px;
 }
 
-/* ============================================================
-   MODAL
-   ============================================================ */
+/* ===== MODAL ===== */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -735,7 +917,6 @@ export default {
 
 .modal-form { padding: 1.4rem 1.6rem; }
 
-/* Form elements */
 .form-group {
   margin-bottom: 18px;
 }
@@ -964,9 +1145,7 @@ export default {
 
 .btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(180,83,9,0.38); }
 
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
+/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .lot-container { padding: 0 1rem; margin: 1rem auto; }
   .page-header { flex-direction: column; align-items: flex-start; }

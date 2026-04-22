@@ -5,6 +5,9 @@ const addSuivi = async (req, res) => {
     const { lot_id, date_suivi, temperature, consommation_aliment, consommations, mortalite_jour, observations } = req.body;
     const userId = req.userId;
 
+    console.log('=== addSuivi DEBUG ===');
+    console.log('Données reçues:', { lot_id, date_suivi, temperature, consommation_aliment, consommations, mortalite_jour, observations });
+
     try {
         // Vérifier que le lot appartient à l'utilisateur
         const [lots] = await db.query(
@@ -16,43 +19,73 @@ const addSuivi = async (req, res) => {
             return res.status(403).json({ error: 'Lot non autorisé' });
         }
 
-        // Traiter les consommations multiples
-        let consommationsData = null;
         let totalConsommation = consommation_aliment || 0;
+        let consommationsData = null;
         
+        // Traiter les consommations multiples
         if (consommations) {
-            consommationsData = consommations;
-            const consommationsArray = JSON.parse(consommations);
+            let consommationsArray;
             
-            // Mettre à jour chaque stock
-            for (let item of consommationsArray) {
-                if (!item.type_aliment || !item.quantite || item.quantite <= 0) continue;
-                
-                // Trouver le stock correspondant
-                const [stockItems] = await db.query(
-                    'SELECT * FROM stock_aliment WHERE user_id = ? AND type_aliment = ? ORDER BY created_at DESC LIMIT 1',
-                    [userId, item.type_aliment]
-                );
-                
-                if (stockItems.length === 0) {
-                    return res.status(400).json({ error: `Aucun stock trouvé pour "${item.type_aliment}"` });
+            if (typeof consommations === 'string') {
+                consommationsData = consommations;
+                try {
+                    consommationsArray = JSON.parse(consommations);
+                } catch(e) {
+                    consommationsArray = [];
                 }
+            } else if (Array.isArray(consommations)) {
+                consommationsData = JSON.stringify(consommations);
+                consommationsArray = consommations;
+            } else {
+                consommationsArray = [];
+            }
+            
+            if (consommationsArray.length > 0) {
+                // Calculer le total
+                totalConsommation = consommationsArray.reduce((sum, item) => {
+                    let quantite = parseFloat(item.quantite) || 0;
+                    if (item.unite === 'sac') quantite = quantite * 50;
+                    return sum + quantite;
+                }, 0);
                 
-                const stock = stockItems[0];
-                
-                // Vérifier si le stock est suffisant
-                if (stock.quantite < item.quantite) {
-                    return res.status(400).json({ 
-                        error: `Stock insuffisant pour "${item.type_aliment}". Il reste ${stock.quantite} ${stock.unite}.` 
-                    });
+                // Mettre à jour chaque stock
+                for (let item of consommationsArray) {
+                    if (!item.type_aliment || !item.quantite || item.quantite <= 0) continue;
+                    
+                    // Trouver le stock correspondant (le premier trouvé)
+                    const [stockItems] = await db.query(
+                        'SELECT * FROM stock_aliment WHERE user_id = ? AND type_aliment = ? ORDER BY created_at DESC LIMIT 1',
+                        [userId, item.type_aliment]
+                    );
+                    
+                    if (stockItems.length === 0) {
+                        return res.status(400).json({ error: `Aucun stock trouvé pour "${item.type_aliment}"` });
+                    }
+                    
+                    const stock = stockItems[0];
+                    let quantite = parseFloat(item.quantite);
+                    
+                    // Convertir la consommation dans l'unité du stock
+                    if (stock.unite === 'kg' && item.unite === 'sac') {
+                        quantite = quantite * 50;
+                    } else if (stock.unite === 'sac' && item.unite === 'kg') {
+                        quantite = quantite / 50;
+                    }
+                    
+                    // Vérifier si le stock est suffisant
+                    if (parseFloat(stock.quantite) < quantite) {
+                        return res.status(400).json({ 
+                            error: `Stock insuffisant pour "${item.type_aliment}". Il reste ${stock.quantite} ${stock.unite}.` 
+                        });
+                    }
+                    
+                    // Mettre à jour le stock
+                    const nouveauStock = parseFloat(stock.quantite) - quantite;
+                    await db.query(
+                        'UPDATE stock_aliment SET quantite = ? WHERE id = ?',
+                        [nouveauStock, stock.id]
+                    );
                 }
-                
-                // Mettre à jour le stock
-                const nouveauStock = stock.quantite - item.quantite;
-                await db.query(
-                    'UPDATE stock_aliment SET quantite = ? WHERE id = ?',
-                    [nouveauStock, stock.id]
-                );
             }
         }
 
@@ -61,20 +94,21 @@ const addSuivi = async (req, res) => {
             `INSERT INTO suivi_quotidien 
              (lot_id, date_suivi, temperature, consommation_aliment, consommations, mortalite_jour, observations) 
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [lot_id, date_suivi, temperature, totalConsommation, consommationsData, mortalite_jour, observations]
+            [lot_id, date_suivi, temperature || null, totalConsommation, consommationsData, mortalite_jour || 0, observations || null]
         );
 
+        console.log('Suivi ajouté avec ID:', result.insertId);
         res.status(201).json({ 
             message: 'Suivi ajouté avec succès', 
             id: result.insertId 
         });
     } catch (error) {
         console.error('Erreur addSuivi:', error);
-        res.status(500).json({ error: 'Erreur lors de l\'ajout du suivi' });
+        res.status(500).json({ error: 'Erreur lors de l\'ajout du suivi: ' + error.message });
     }
 };
 
-// Historique suivi d'un lot
+// Récupérer les suivis d'un lot
 const getSuiviByLot = async (req, res) => {
     const { lot_id } = req.params;
     const userId = req.userId;
@@ -95,21 +129,9 @@ const getSuiviByLot = async (req, res) => {
             [lot_id]
         );
 
-        // Ajouter le total des consommations pour affichage
-        for (let suivi of suivis) {
-            if (suivi.consommations) {
-                try {
-                    const consos = JSON.parse(suivi.consommations);
-                    suivi.total_consommation = consos.reduce((sum, c) => sum + (parseFloat(c.quantite) || 0), 0);
-                } catch(e) {
-                    suivi.total_consommation = suivi.consommation_aliment || 0;
-                }
-            }
-        }
-
         res.json(suivis);
     } catch (error) {
-        console.error(error);
+        console.error('Erreur getSuiviByLot:', error);
         res.status(500).json({ error: 'Erreur lors de la récupération du suivi' });
     }
 };
@@ -118,8 +140,21 @@ const getSuiviByLot = async (req, res) => {
 const updateSuivi = async (req, res) => {
     const { id } = req.params;
     const { temperature, consommation_aliment, consommations, mortalite_jour, observations } = req.body;
+    const userId = req.userId;
 
     try {
+        // Vérifier que le suivi appartient à l'utilisateur
+        const [check] = await db.query(
+            `SELECT s.id FROM suivi_quotidien s
+             JOIN lots l ON s.lot_id = l.id
+             WHERE s.id = ? AND l.user_id = ?`,
+            [id, userId]
+        );
+
+        if (check.length === 0) {
+            return res.status(404).json({ error: 'Suivi non trouvé ou non autorisé' });
+        }
+
         const [result] = await db.query(
             'UPDATE suivi_quotidien SET temperature=?, consommation_aliment=?, consommations=?, mortalite_jour=?, observations=? WHERE id=?',
             [temperature, consommation_aliment, consommations, mortalite_jour, observations, id]
@@ -131,7 +166,7 @@ const updateSuivi = async (req, res) => {
 
         res.json({ message: 'Suivi modifié avec succès' });
     } catch (error) {
-        console.error(error);
+        console.error('Erreur updateSuivi:', error);
         res.status(500).json({ error: 'Erreur lors de la modification du suivi' });
     }
 };

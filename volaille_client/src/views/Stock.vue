@@ -6,7 +6,7 @@
       <div class="header-left">
         <div class="page-eyebrow">📦 Gestion des ressources</div>
         <h1 class="page-title">{{ $t('stock') }}</h1>
-        <p class="page-sub">{{ stock.length }} article{{ stock.length > 1 ? 's' : '' }} en stock</p>
+        <p class="page-sub">{{ stockFusionne.length }} article{{ stockFusionne.length > 1 ? 's' : '' }} en stock</p>
       </div>
       <button class="btn-new" @click="showAddModal = true">
         ➕ {{ $t('add_stock') }}
@@ -15,7 +15,6 @@
 
     <!-- ===== ALERTES GLASSMORPHISM ===== -->
     <div v-if="stockAlerte.length > 0" class="alerts-glass-wrap">
-      <!-- Fond flou décoratif -->
       <div class="glass-bg-blob b1"></div>
       <div class="glass-bg-blob b2"></div>
 
@@ -31,17 +30,17 @@
         <div class="glass-items">
           <div
             v-for="item in stockAlerte"
-            :key="item.id"
+            :key="item.type_aliment"
             class="glass-item"
           >
             <span class="glass-dot"></span>
             <span class="glass-item-name">{{ item.type_aliment }}</span>
-            <span class="glass-item-qty">{{ item.quantite }} {{ item.unite }}</span>
-            <span class="glass-item-seuil">seuil : {{ item.seuil_alerte }} {{ item.unite }}</span>
+            <span class="glass-item-qty">{{ item.quantite_affichee }} {{ item.unite_affichee }}</span>
+            <span class="glass-item-seuil">seuil : {{ item.seuil_alerte_kg }} kg</span>
             <span class="glass-item-bar-wrap">
               <span
                 class="glass-item-bar"
-                :style="{ width: Math.min((item.quantite / item.seuil_alerte) * 100, 100) + '%' }"
+                :style="{ width: Math.min((item.quantite_kg / item.seuil_alerte_kg) * 100, 100) + '%' }"
               ></span>
             </span>
           </div>
@@ -75,8 +74,8 @@
           </thead>
           <tbody>
             <tr
-              v-for="item in stock"
-              :key="item.id"
+              v-for="item in stockFusionne"
+              :key="item.type_aliment"
               class="table-row"
               :class="{ 'row-alert': item.alerte }"
             >
@@ -86,25 +85,28 @@
               </td>
               <td class="text-center">
                 <span class="qty-val" :class="item.alerte ? 'qty-low' : 'qty-ok'">
-                  {{ item.quantite }}
+                  {{ item.quantite_affichee }}
                 </span>
               </td>
               <td class="text-center">
-                <span class="unit-pill">{{ item.unite }}</span>
+                <select v-model="item.unite_affichee" @change="changerUnite(item)" class="unit-select">
+                  <option value="kg">kg</option>
+                  <option value="sac">sac</option>
+                </select>
               </td>
               <td class="text-center">
-                <span class="seuil-val">{{ item.seuil_alerte }}</span>
+                <span class="seuil-val">{{ item.seuil_alerte_kg }} kg</span>
               </td>
               <td class="text-center td-level">
                 <div class="level-bar-wrap">
                   <div
                     class="level-bar"
                     :class="item.alerte ? 'level-danger' : 'level-ok'"
-                    :style="{ width: Math.min((item.quantite / (item.seuil_alerte * 2)) * 100, 100) + '%' }"
+                    :style="{ width: Math.min((item.quantite_kg / (item.seuil_alerte_kg * 2)) * 100, 100) + '%' }"
                   ></div>
                 </div>
               </td>
-              <td class="td-date">{{ formatDate(item.date_achat) }}</td>
+              <td class="td-date">{{ item.date_achat_affiche }}</td>
               <td>
                 <span :class="item.alerte ? 'badge-alert' : 'badge-normal'">
                   {{ item.alerte ? '⚠️ ' + $t('low_stock') : '✅ ' + $t('normal') }}
@@ -113,11 +115,11 @@
               <td class="text-center">
                 <div class="action-btns">
                   <button class="btn-edit" @click="editerStock(item)" title="Modifier">✏️</button>
-                  <button class="btn-del" @click="supprimerStock(item.id)" title="Supprimer">🗑️</button>
+                  <button class="btn-del" @click="supprimerStockGroupe(item.type_aliment)" title="Supprimer">🗑️</button>
                 </div>
               </td>
             </tr>
-            <tr v-if="stock.length === 0">
+            <tr v-if="stockFusionne.length === 0">
               <td colspan="8" class="empty-row">
                 <div class="empty-state">
                   <span class="empty-icon">📦</span>
@@ -131,10 +133,9 @@
       </div>
     </div>
 
-    <!-- ===== MODAL ===== -->
+    <!-- ===== MODAL AJOUT/MODIFICATION STOCK ===== -->
     <div v-if="showAddModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal-box">
-
         <div class="modal-header">
           <div class="modal-logo">📦</div>
           <div>
@@ -145,7 +146,6 @@
         </div>
 
         <form @submit.prevent="saveStock" class="modal-form">
-
           <div class="form-group">
             <label>{{ $t('feed_type') }} <span class="required">*</span></label>
             <div class="input-wrap">
@@ -169,7 +169,6 @@
                 <select v-model="stockForm.unite">
                   <option value="kg">Kilogramme (kg)</option>
                   <option value="sac">Sac</option>
-                  <option value="tonne">Tonne</option>
                 </select>
               </div>
             </div>
@@ -177,11 +176,12 @@
 
           <div class="form-row">
             <div class="form-group">
-              <label>{{ $t('alert_threshold') }}</label>
+              <label>{{ $t('alert_threshold') }} <span class="required">(toujours en kg)</span></label>
               <div class="input-wrap">
                 <span class="input-prefix">⚠️</span>
                 <input type="number" step="0.01" v-model="stockForm.seuil_alerte" placeholder="50" min="0" />
               </div>
+              <small class="field-hint">Le seuil est toujours en kilogrammes (kg)</small>
             </div>
             <div class="form-group">
               <label>{{ $t('purchase_date') }}</label>
@@ -192,13 +192,25 @@
             </div>
           </div>
 
+          <!-- Affichage conversion -->
+          <div class="conversion-info" v-if="stockForm.quantite && stockForm.quantite > 0">
+            <div class="conversion-box">
+              <span class="conversion-icon">🔄</span>
+              <span v-if="stockForm.unite === 'kg'">
+                {{ stockForm.quantite }} kg = {{ (stockForm.quantite / 50).toFixed(2) }} sac
+              </span>
+              <span v-else>
+                {{ stockForm.quantite }} sac = {{ (stockForm.quantite * 50).toFixed(2) }} kg
+              </span>
+            </div>
+          </div>
+
           <div class="modal-actions">
             <button type="button" class="btn-cancel" @click="closeModal">{{ $t('cancel') }}</button>
             <button type="submit" class="btn-save">
               💾 {{ editingStock ? $t('edit') : $t('add_stock') }}
             </button>
           </div>
-
         </form>
       </div>
     </div>
@@ -213,6 +225,7 @@ export default {
   data() {
     return {
       stock: [],
+      stockFusionne: [],
       showAddModal: false,
       editingStock: null,
       stockForm: {
@@ -225,40 +238,174 @@ export default {
     }
   },
   computed: {
-    stockAlerte() { return this.stock.filter(i => i.alerte) },
-    stockNormal() { return this.stock.filter(i => !i.alerte) }
+    stockAlerte() { 
+      return this.stockFusionne.filter(i => i.alerte) 
+    },
+    stockNormal() { 
+      return this.stockFusionne.filter(i => !i.alerte) 
+    }
   },
-  mounted() { this.loadStock() },
+  mounted() { 
+    this.loadStock() 
+  },
   methods: {
     async loadStock() {
-      try { const r = await api.get('/stock'); this.stock = r.data }
-      catch (e) { console.error(e) }
-    },
-    async saveStock() {
-      try {
-        if (this.editingStock) {
-          await api.put(`/stock/${this.editingStock.id}`, this.stockForm)
-        } else {
-          await api.post('/stock', this.stockForm)
-        }
-        this.closeModal(); this.loadStock()
-      } catch (e) { console.error(e) }
-    },
-    async supprimerStock(id) {
-      if (confirm(this.$t('confirm_delete'))) {
-        try { await api.delete(`/stock/${id}`); this.loadStock() }
-        catch (e) { console.error(e) }
+      try { 
+        const r = await api.get('/stock')
+        this.stock = r.data
+        this.fusionnerStock()
+      } catch (e) { 
+        console.error(e)
       }
     },
+    
+    fusionnerStock() {
+      const groupes = {}
+      
+      for (let item of this.stock) {
+        const type = item.type_aliment
+        
+        if (!groupes[type]) {
+          groupes[type] = {
+            type_aliment: type,
+            items: [],
+            quantite_kg: 0,
+            seuil_alerte_kg: 0,
+            dates: [],
+            unite_affichee: 'kg'
+          }
+        }
+        
+        groupes[type].items.push(item)
+        
+        // Convertir la quantité en kg
+        let quantiteEnKg = parseFloat(item.quantite)
+        if (item.unite === 'sac') quantiteEnKg = quantiteEnKg * 50
+        
+        // Le seuil est déjà en kg dans la base de données
+        let seuilEnKg = parseFloat(item.seuil_alerte)
+        if (isNaN(seuilEnKg)) seuilEnKg = 50
+        
+        groupes[type].quantite_kg += quantiteEnKg
+        groupes[type].seuil_alerte_kg += seuilEnKg
+        groupes[type].dates.push(item.date_achat || item.created_at)
+      }
+      
+      this.stockFusionne = Object.values(groupes).map(group => {
+        // Le seuil est la somme des seuils (déjà en kg)
+        const seuilTotalKg = group.seuil_alerte_kg
+        const alerte = group.quantite_kg <= seuilTotalKg
+        
+        // Calculer l'affichage selon l'unité choisie
+        let quantite_affichee = group.quantite_kg
+        if (group.unite_affichee === 'sac') {
+          quantite_affichee = group.quantite_kg / 50
+        }
+        
+        return {
+          type_aliment: group.type_aliment,
+          items: group.items,
+          quantite_kg: group.quantite_kg,
+          seuil_alerte_kg: seuilTotalKg,
+          quantite_affichee: quantite_affichee.toFixed(2),
+          unite_affichee: group.unite_affichee,
+          alerte: alerte,
+          date_achat_affiche: group.dates[0] ? new Date(group.dates[0]).toLocaleDateString('fr-FR') : '—'
+        }
+      })
+    },
+    
+    changerUnite(item) {
+      if (item.unite_affichee === 'kg') {
+        item.quantite_affichee = item.quantite_kg.toFixed(2)
+      } else {
+        item.quantite_affichee = (item.quantite_kg / 50).toFixed(2)
+      }
+    },
+    
+    async saveStock() {
+      if (!this.stockForm.type_aliment) {
+        alert('Veuillez saisir le type d\'aliment')
+        return
+      }
+      if (!this.stockForm.quantite || this.stockForm.quantite <= 0) {
+        alert('Veuillez saisir une quantité valide')
+        return
+      }
+
+      try {
+        // Le seuil est TOUJOURS enregistré en kg
+        let seuilAlerte = parseFloat(this.stockForm.seuil_alerte)
+        if (isNaN(seuilAlerte)) seuilAlerte = 50
+        
+        const dataToSend = {
+          type_aliment: this.stockForm.type_aliment,
+          quantite: parseFloat(this.stockForm.quantite),
+          unite: this.stockForm.unite,
+          seuil_alerte: seuilAlerte, // Toujours en kg
+          date_achat: this.stockForm.date_achat || new Date().toISOString().split('T')[0]
+        }
+
+        if (this.editingStock) {
+          const premierItem = this.editingStock.items[0]
+          await api.put(`/stock/${premierItem.id}`, dataToSend)
+          alert('✅ Stock modifié avec succès')
+        } else {
+          await api.post('/stock', dataToSend)
+          alert('✅ Stock ajouté avec succès')
+        }
+        
+        this.closeModal()
+        await this.loadStock()
+      } catch (e) { 
+        console.error(e)
+        alert(e.response?.data?.error || '❌ Erreur lors de la sauvegarde')
+      }
+    },
+    
+    async supprimerStockGroupe(typeAliment) {
+      if (confirm(`Voulez-vous vraiment supprimer TOUS les stocks de "${typeAliment}" ?`)) {
+        try {
+          const itemsASupprimer = this.stock.filter(s => s.type_aliment === typeAliment)
+          for (let item of itemsASupprimer) {
+            await api.delete(`/stock/${item.id}`)
+          }
+          await this.loadStock()
+          alert('✅ Tous les stocks supprimés avec succès')
+        } catch (e) { 
+          console.error(e)
+          alert('❌ Erreur lors de la suppression')
+        }
+      }
+    },
+    
     editerStock(item) {
       this.editingStock = item
-      this.stockForm = { type_aliment: item.type_aliment, quantite: item.quantite, unite: item.unite, seuil_alerte: item.seuil_alerte, date_achat: item.date_achat }
+      const premierItem = item.items[0]
+      this.stockForm = {
+        type_aliment: premierItem.type_aliment,
+        quantite: premierItem.quantite,
+        unite: premierItem.unite,
+        seuil_alerte: premierItem.seuil_alerte,
+        date_achat: premierItem.date_achat || new Date().toISOString().split('T')[0]
+      }
       this.showAddModal = true
     },
-    formatDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('fr-FR') },
+    
+    formatDate(d) { 
+      if (!d) return '—'
+      return new Date(d).toLocaleDateString('fr-FR') 
+    },
+    
     closeModal() {
       this.showAddModal = false
-      this.stockForm = { type_aliment: '', quantite: '', unite: 'kg', seuil_alerte: 50, date_achat: new Date().toISOString().split('T')[0] }
+      this.stockForm = {
+        type_aliment: '',
+        quantite: '',
+        unite: 'kg',
+        seuil_alerte: 50,
+        date_achat: new Date().toISOString().split('T')[0]
+      }
       this.editingStock = null
     }
   }
@@ -266,6 +413,54 @@ export default {
 </script>
 
 <style scoped>
+/* Styles pour le selecteur d'unité */
+.unit-select {
+  background: white;
+  border: 1.5px solid rgba(180,120,50,0.22);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--ink);
+  cursor: pointer;
+  outline: none;
+  text-align: center;
+  width: 70px;
+}
+
+.unit-select:focus {
+  border-color: var(--amber);
+}
+
+.conversion-info {
+  margin-bottom: 20px;
+}
+
+.conversion-box {
+  background: linear-gradient(135deg, #E0F2FE, #F0F9FF);
+  border: 1.5px solid #7DD3FC;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #0369A1;
+  font-weight: 500;
+}
+
+.conversion-icon {
+  font-size: 16px;
+}
+
+.field-hint {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-muted);
+  margin-top: 4px;
+}
+
+/* Vos styles CSS originaux */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
 
 :root {
@@ -306,9 +501,7 @@ export default {
   color: var(--ink);
 }
 
-/* ============================================================
-   HEADER
-   ============================================================ */
+/* ===== HEADER ===== */
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -365,19 +558,16 @@ export default {
 
 .btn-new:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(245,158,11,0.40); }
 
-/* ============================================================
-   ALERTES GLASSMORPHISM
-   ============================================================ */
+/* ===== ALERTES GLASSMORPHISM ===== */
 .alerts-glass-wrap {
   position: relative;
   margin-bottom: 1.8rem;
   border-radius: var(--radius);
   overflow: hidden;
-  padding: 2px; /* border trick */
+  padding: 2px;
   background: linear-gradient(135deg, rgba(217,119,6,0.35), rgba(194,65,12,0.25), rgba(217,119,6,0.15));
 }
 
-/* Blobs décoratifs derrière le verre */
 .glass-bg-blob {
   position: absolute;
   border-radius: 50%;
@@ -525,9 +715,7 @@ export default {
   transition: width 0.6s ease;
 }
 
-/* ============================================================
-   TABLEAU
-   ============================================================ */
+/* ===== TABLEAU ===== */
 .table-card {
   background: white;
   border: 1px solid var(--border);
@@ -619,7 +807,7 @@ export default {
 .qty-low { color: var(--terra); }
 
 .unit-pill {
-  background: var(--sky-light, #E0F2FE);
+  background: #E0F2FE;
   color: #0369A1;
   padding: 3px 10px;
   border-radius: 20px;
@@ -721,9 +909,7 @@ export default {
 
 .btn-new-sm:hover { transform: translateY(-1px); }
 
-/* ============================================================
-   MODAL
-   ============================================================ */
+/* ===== MODAL ===== */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -890,9 +1076,7 @@ export default {
 
 .btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(180,83,9,0.38); }
 
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
+/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .stock-container { padding: 0 1rem; margin: 1rem auto; }
   .page-header { flex-direction: column; align-items: flex-start; }
