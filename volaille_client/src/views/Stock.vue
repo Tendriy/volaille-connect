@@ -192,18 +192,7 @@
             </div>
           </div>
 
-          <!-- Affichage conversion -->
-          <div class="conversion-info" v-if="stockForm.quantite && stockForm.quantite > 0">
-            <div class="conversion-box">
-              <span class="conversion-icon">🔄</span>
-              <span v-if="stockForm.unite === 'kg'">
-                {{ stockForm.quantite }} kg = {{ (stockForm.quantite / 50).toFixed(2) }} sac
-              </span>
-              <span v-else>
-                {{ stockForm.quantite }} sac = {{ (stockForm.quantite * 50).toFixed(2) }} kg
-              </span>
-            </div>
-          </div>
+          
 
           <div class="modal-actions">
             <button type="button" class="btn-cancel" @click="closeModal">{{ $t('cancel') }}</button>

@@ -28,10 +28,13 @@
         <div class="alert-content">
           <h3>{{ $t('stock_alerts') }} <span class="alert-count">{{ alertesStock.length }}</span></h3>
           <ul>
-            <li v-for="alerte in alertesStock" :key="alerte.id">
+            <li v-for="alerte in alertesStock.slice(0, 5)" :key="alerte.id">
               <span class="alert-dot stock-dot"></span>
-              {{ alerte.type_aliment }} : <strong>{{ alerte.quantite }} {{ alerte.unite }}</strong> restants
+              {{ alerte.type_aliment }} : <strong>{{ parseFloat(alerte.quantite).toFixed(2) }} {{ alerte.unite }}</strong> restants
               <span class="alert-threshold">(seuil : {{ alerte.seuil_alerte }})</span>
+            </li>
+            <li v-if="alertesStock.length > 5" class="more-alerts">
+              ... et {{ alertesStock.length - 5 }} autres alertes
             </li>
           </ul>
         </div>
@@ -45,6 +48,23 @@
             <li v-for="alerte in alertesVaccins" :key="alerte.id">
               <span class="alert-dot vaccin-dot"></span>
               {{ alerte.message }}
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ===== ALERTE MORTALITÉ ÉLEVÉE ===== -->
+      <div v-if="lotsMortaliteEleve.length > 0" class="alert-card alert-mortality">
+        <div class="alert-icon-wrap"></div>
+        <div class="alert-content">
+          <h3>⚠️ Alerte mortalité élevée <span class="alert-count mortality-count">{{ lotsMortaliteEleve.length }}</span></h3>
+          <ul>
+            <li v-for="lot in lotsMortaliteEleve" :key="lot.id">
+              <span class="alert-dot mortality-dot"></span>
+              <strong>{{ lot.nom_lot }}</strong> ({{ lot.race }}) : 
+              <strong class="text-danger">{{ lot.taux_mortalite }}%</strong> de mortalité
+              <span class="alert-threshold">({{ lot.total_morts }} morts sur {{ lot.nombre_initial }})</span>
+              <button class="btn-view-small" @click="voirLot(lot.id)" title="Voir détails">👁️</button>
             </li>
           </ul>
         </div>
@@ -179,19 +199,111 @@
       </div>
       <div class="bar-chart-container">
         <div v-for="(item, index) in monthlySalesData" :key="index" class="bar-item">
-          <div class="bar-label">{{ item.mois }}</div>
+          <div class="bar-label">{{ formatMoisCourt(item.mois) }}</div>
           <div class="bar-wrapper">
             <div
-              class="bar"
+              class="bar sales-bar"
               :style="{
                 width: `${(item.total / maxSales) * 100}%`,
-                backgroundColor: getBarColor(index)
+                backgroundColor: getSalesBarColor(index)
               }"
             >
               <span class="bar-value">{{ formatPrice(item.total) }} Ar</span>
             </div>
           </div>
+          <div class="bar-value-label">{{ formatPrice(item.total) }} Ar</div>
         </div>
+      </div>
+      <div v-if="monthlySalesData.length === 0" class="empty-chart">
+        <p>Aucune donnée de vente disponible</p>
+      </div>
+    </div>
+
+    <!-- ===== TAUX DE MORTALITÉ MENSUEL (DIAGRAMME VERTICAL) ===== -->
+    <div class="chart-card full-width">
+      <div class="chart-header">
+        <h3>📉 Taux de mortalité mensuel</h3>
+        <span class="chart-badge total-badge">Moyenne : {{ mortaliteMoyenneGlobale }}%</span>
+      </div>
+      <div class="vertical-bar-chart">
+        <div class="chart-y-axis">
+          <div class="y-axis-label">Taux de mortalité (%)</div>
+          <div class="y-axis-grid">
+            <div class="y-tick">20%</div>
+            <div class="y-tick">15%</div>
+            <div class="y-tick">10%</div>
+            <div class="y-tick">5%</div>
+            <div class="y-tick">0%</div>
+          </div>
+        </div>
+        <div class="chart-bars-container">
+          <div v-for="(item, index) in mortaliteData" :key="index" class="vertical-bar-item">
+            <div class="bar-container">
+              <div
+                class="vertical-bar"
+                :style="{
+                  height: `${Math.min((item.taux / maxMortalite) * 200, 200)}px`,
+                  backgroundColor: getMortalityBarColor(item.taux)
+                }"
+              >
+                <span class="bar-value-top">{{ item.taux }}%</span>
+              </div>
+            </div>
+            <div class="bar-label-x">{{ formatMoisCourt(item.mois) }}</div>
+          </div>
+        </div>
+      </div>
+      <div v-if="mortaliteData.length === 0" class="empty-chart">
+        <p>Aucune donnée de mortalité disponible</p>
+      </div>
+    </div>
+
+    <!-- ===== ÉVOLUTION DE LA MORTALITÉ PAR LOT ===== -->
+    <div class="chart-card full-width">
+      <div class="chart-header">
+        <h3>📈 Lots avec mortalité élevée</h3>
+        <span class="chart-badge total-badge">Moyenne globale : {{ tauxMortaliteMoyen }}%</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-mortality">
+          <thead>
+            <tr>
+              <th>Lot</th>
+              <th>Race</th>
+              <th class="text-center">Initial</th>
+              <th class="text-center">Morts</th>
+              <th class="text-center">Taux</th>
+              <th>Progression</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="lot in lotsMortaliteEleve" :key="lot.id">
+              <td class="lot-name">{{ lot.nom_lot }}</td>
+              <td>{{ lot.race || '-' }}</td>
+              <td class="text-center">{{ lot.nombre_initial }}</td>
+              <td class="text-center text-danger">{{ lot.total_morts || 0 }}</td>
+              <td class="text-center">
+                <span :class="getMortalityClass((lot.total_morts / lot.nombre_initial) * 100)">
+                  {{ ((lot.total_morts / lot.nombre_initial) * 100).toFixed(1) }}%
+                </span>
+              </td>
+              <td>
+                <div class="mortality-bar-mini">
+                  <div class="mortality-fill" :style="{ width: Math.min(((lot.total_morts / lot.nombre_initial) * 100), 100) + '%' }"></div>
+                </div>
+              </td>
+              <td class="text-center">
+                <button class="btn-view" @click="voirLot(lot.id)" title="Voir détails">👁️</button>
+              </td>
+            </tr>
+            <tr v-if="lotsMortaliteEleve.length === 0">
+              <td colspan="7" class="empty-row">
+                <span>✅ Aucun lot avec mortalité élevée</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -230,7 +342,7 @@
                   {{ lot.statut === 'actif' ? $t('active') : $t('closed') }}
                 </span>
               </td>
-              <td>
+              <td class="text-center">
                 <button class="btn-view" @click="voirLot(lot.id)" title="Voir détails">👁️</button>
               </td>
             </tr>
@@ -286,6 +398,9 @@ export default {
       allStock: [],
       ventesMensuelles: {},
       totalVentes: 0,
+      mortaliteData: [],
+      mortaliteMoyenneGlobale: 0,
+      maxMortalite: 0,
       loading: true,
       error: null,
       currentDate: new Date().toLocaleDateString('fr-FR', {
@@ -303,11 +418,20 @@ export default {
     lotsActifsPercent() { return ((this.lotsActifs / this.lotsTotal) * 100).toFixed(1) },
     lotsClosedPercent() { return ((this.lotsClosed / this.lotsTotal) * 100).toFixed(1) },
     lotsActifsThisMonth() {
-      return this.lotsActifs > 0 ? Math.max(1, this.lotsActifs - this.lotsClosed) : 0
+      const thisMonth = new Date().getMonth()
+      const count = this.allLots.filter(l => {
+        const created = new Date(l.created_at)
+        return l.statut === 'actif' && created.getMonth() === thisMonth
+      }).length
+      return count || 0
     },
     totalVolaillesActives() {
       return this.allLots.reduce((sum, lot) => {
-        return lot.statut === 'actif' ? sum + (lot.nombre_restant || lot.nombre_initial) : sum
+        if (lot.statut === 'actif') {
+          const restant = lot.nombre_restant || (lot.nombre_initial - (lot.total_morts || 0) - (lot.total_vendus || 0))
+          return sum + (restant > 0 ? restant : 0)
+        }
+        return sum
       }, 0)
     },
     lotsPieData() {
@@ -319,8 +443,8 @@ export default {
         { path: this.describeArc(50, 50, 40, start + actifsAngle, start + actifsAngle + closedAngle), color: '#A8A29E' }
       ]
     },
-    stockNormal() { return this.allStock.filter(s => s.quantite > s.seuil_alerte).length },
-    stockLow() { return this.allStock.filter(s => s.quantite <= s.seuil_alerte).length },
+    stockNormal() { return this.allStock.filter(s => parseFloat(s.quantite) > parseFloat(s.seuil_alerte)).length },
+    stockLow() { return this.allStock.filter(s => parseFloat(s.quantite) <= parseFloat(s.seuil_alerte)).length },
     stockTotal() { return this.allStock.length || 1 },
     stockNormalPercent() { return ((this.stockNormal / this.stockTotal) * 100).toFixed(1) },
     stockLowPercent() { return ((this.stockLow / this.stockTotal) * 100).toFixed(1) },
@@ -345,17 +469,43 @@ export default {
     },
     monthlySalesData() {
       return Object.entries(this.ventesMensuelles)
-        .map(([mois, total]) => ({ mois, total }))
+        .map(([mois, total]) => ({ mois, total: parseFloat(total) }))
         .sort((a, b) => a.mois.localeCompare(b.mois))
-        .slice(-6)
+        .slice(-12)
     },
-    maxSales() { return Math.max(...this.monthlySalesData.map(d => d.total), 1) },
+    maxSales() { 
+      const max = Math.max(...this.monthlySalesData.map(d => d.total), 1)
+      return max === 0 ? 1 : max
+    },
     mortaliteMoyenne() {
       if (!this.allLots.length) return '0'
-      const totalMorts = this.allLots.reduce((s, l) => s + (l.total_morts || 0), 0)
-      const totalInitial = this.allLots.reduce((s, l) => s + l.nombre_initial, 0)
-      if (!totalInitial) return '0'
+      const totalMorts = this.allLots.reduce((s, l) => s + (parseFloat(l.total_morts) || 0), 0)
+      const totalInitial = this.allLots.reduce((s, l) => s + parseFloat(l.nombre_initial), 0)
+      if (!totalInitial || totalInitial === 0) return '0'
       return ((totalMorts / totalInitial) * 100).toFixed(1)
+    },
+    tauxMortaliteMoyen() {
+      if (!this.allLots.length) return '0'
+      const totalMorts = this.allLots.reduce((s, l) => s + (parseFloat(l.total_morts) || 0), 0)
+      const totalInitial = this.allLots.reduce((s, l) => s + parseFloat(l.nombre_initial), 0)
+      if (!totalInitial || totalInitial === 0) return '0'
+      return ((totalMorts / totalInitial) * 100).toFixed(1)
+    },
+    lotsMortaliteEleve() {
+      return this.allLots.filter(lot => {
+        const totalMorts = parseFloat(lot.total_morts) || 0
+        const initial = parseFloat(lot.nombre_initial) || 1
+        const taux = (totalMorts / initial) * 100
+        return lot.statut === 'actif' && taux > 10
+      }).map(lot => {
+        const totalMorts = parseFloat(lot.total_morts) || 0
+        const initial = parseFloat(lot.nombre_initial) || 1
+        return {
+          ...lot,
+          total_morts: totalMorts,
+          taux_mortalite: ((totalMorts / initial) * 100).toFixed(1)
+        }
+      })
     },
     lastUpdate() { return new Date().toLocaleString('fr-FR') }
   },
@@ -370,10 +520,20 @@ export default {
       try {
         const response = await api.get('/dashboard/full')
         this.resume = response.data.resume
-        this.lotsRecents = response.data.lotsRecents
-        this.alertesStock = response.data.alertesStock
-        this.alertesVaccins = response.data.alertesVaccins
+        this.lotsRecents = response.data.lotsRecents || []
+        this.alertesStock = response.data.alertesStock || []
+        this.alertesVaccins = response.data.alertesVaccins || []
+        this.ventesMensuelles = response.data.ventesMensuelles || {}
+        this.totalVentes = response.data.chiffreAffairesTotal || 0
+        this.mortaliteData = response.data.mortaliteMensuelle || []
+        
+        if (this.mortaliteData.length > 0) {
+          const total = this.mortaliteData.reduce((sum, m) => sum + (parseFloat(m.taux) || 0), 0)
+          this.mortaliteMoyenneGlobale = (total / this.mortaliteData.length).toFixed(1)
+          this.maxMortalite = Math.max(...this.mortaliteData.map(m => parseFloat(m.taux) || 0), 1)
+        }
       } catch (error) {
+        console.error('Erreur chargement dashboard:', error)
         this.error = 'Erreur lors du chargement des données'
         await this.loadIndividualRoutes()
       } finally {
@@ -385,10 +545,10 @@ export default {
         const resumeRes = await api.get('/dashboard')
         this.resume = resumeRes.data
         const lotsRes = await api.get('/dashboard/recent-lots')
-        this.lotsRecents = lotsRes.data
+        this.lotsRecents = lotsRes.data || []
         const alertesRes = await api.get('/dashboard/alertes')
-        this.alertesStock = alertesRes.data.alertesStock
-        this.alertesVaccins = alertesRes.data.alertesVaccins
+        this.alertesStock = alertesRes.data.alertesStock || []
+        this.alertesVaccins = alertesRes.data.alertesVaccins || []
       } catch (error) {
         console.error('Erreur chargement routes individuelles:', error)
       }
@@ -396,25 +556,56 @@ export default {
     async loadAllData() {
       try {
         const lotsRes = await api.get('/lots')
-        this.allLots = lotsRes.data
+        this.allLots = lotsRes.data || []
+        
         const stockRes = await api.get('/stock')
-        this.allStock = stockRes.data
-        const ventesRes = await api.get('/ventes')
-        if (ventesRes.data.ventes_mensuelles) this.ventesMensuelles = ventesRes.data.ventes_mensuelles
-        this.totalVentes = ventesRes.data.chiffre_affaires_total || 0
+        this.allStock = stockRes.data || []
+        
+        if (Object.keys(this.ventesMensuelles).length === 0) {
+          const ventesRes = await api.get('/dashboard/ventes-mensuelles')
+          this.ventesMensuelles = ventesRes.data.ventes_mensuelles || {}
+          this.totalVentes = ventesRes.data.chiffre_affaires_total || 0
+        }
+        
+        if (this.mortaliteData.length === 0) {
+          const mortaliteRes = await api.get('/dashboard/mortalite-mensuelle')
+          this.mortaliteData = mortaliteRes.data || []
+          if (this.mortaliteData.length > 0) {
+            const total = this.mortaliteData.reduce((sum, m) => sum + (parseFloat(m.taux) || 0), 0)
+            this.mortaliteMoyenneGlobale = (total / this.mortaliteData.length).toFixed(1)
+            this.maxMortalite = Math.max(...this.mortaliteData.map(m => parseFloat(m.taux) || 0), 1)
+          }
+        }
       } catch (error) {
         console.error('Erreur chargement données complètes:', error)
       }
     },
     getRestantClass(nombre) {
-      if (nombre === undefined || nombre === null) return ''
-      if (nombre <= 0) return 'text-danger'
-      if (nombre < 10) return 'text-warning'
+      const n = parseFloat(nombre)
+      if (isNaN(n)) return ''
+      if (n <= 0) return 'text-danger'
+      if (n < 10) return 'text-warning'
       return 'text-success'
     },
-    getBarColor(index) {
-      const colors = ['#D97706', '#15803D', '#C2410C', '#0369A1', '#A16207', '#166534']
+    getMortalityClass(taux) {
+      if (taux <= 5) return 'text-success'
+      if (taux <= 10) return 'text-warning'
+      return 'text-danger'
+    },
+    getSalesBarColor(index) {
+      const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
       return colors[index % colors.length]
+    },
+    getMortalityBarColor(taux) {
+      if (taux <= 5) return '#10B981'
+      if (taux <= 10) return '#F59E0B'
+      return '#EF4444'
+    },
+    formatMoisCourt(mois) {
+      if (!mois) return ''
+      const [annee, moisNum] = mois.split('-')
+      const moisNoms = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
+      return `${moisNoms[parseInt(moisNum) - 1]} ${annee}`
     },
     describeArc(x, y, radius, startAngle, endAngle) {
       if (startAngle === endAngle) return ''
@@ -428,8 +619,8 @@ export default {
       return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
     },
     formatPrice(prix) {
-      if (!prix) return '0'
-      return new Intl.NumberFormat('fr-FR').format(Math.round(prix))
+      if (!prix || prix === 0) return '0'
+      return new Intl.NumberFormat('fr-FR').format(Math.round(parseFloat(prix)))
     },
     voirLot(id) { this.$router.push(`/lots/${id}`) }
   }
@@ -438,7 +629,7 @@ export default {
 
 <style scoped>
 /* ============================================================
-   VARIABLES — Palette Volaille Soleil (cohérente avec Home)
+   VARIABLES
    ============================================================ */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
 
@@ -487,9 +678,7 @@ export default {
   color: var(--ink);
 }
 
-/* ============================================================
-   HEADER
-   ============================================================ */
+/* ===== HEADER ===== */
 .dashboard-header {
   display: flex;
   justify-content: space-between;
@@ -563,9 +752,7 @@ export default {
   letter-spacing: 0.06em;
 }
 
-/* ============================================================
-   ALERTES
-   ============================================================ */
+/* ===== ALERTES ===== */
 .alerts-section {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
@@ -585,6 +772,7 @@ export default {
 
 .alert-stock  { border-left-color: var(--amber); }
 .alert-vaccin { border-left-color: var(--terra); }
+.alert-mortality { border-left-color: #C2410C; background: #FFF1EE; }
 
 .alert-icon-wrap {
   font-size: 1.8rem;
@@ -620,6 +808,7 @@ export default {
 }
 
 .vaccin-count { background: var(--terra-light); color: var(--terra); }
+.mortality-count { background: #C2410C; color: white; }
 
 .alert-content ul { list-style: none; padding: 0; }
 
@@ -640,12 +829,29 @@ export default {
 }
 .stock-dot  { background: var(--amber); }
 .vaccin-dot { background: var(--terra); }
+.mortality-dot { background: #C2410C; }
 
 .alert-threshold { font-size: 0.7rem; color: var(--ink-muted); }
 
-/* ============================================================
-   STATS GRID
-   ============================================================ */
+.more-alerts {
+  color: var(--ink-muted);
+  font-style: italic;
+  margin-top: 4px;
+  padding-left: 20px;
+}
+
+.btn-view-small {
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.btn-view-small:hover { background: var(--wheat); }
+
+/* ===== STATS GRID ===== */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -717,9 +923,7 @@ export default {
 
 .stat-trend.positive { color: var(--green); font-weight: 500; }
 
-/* ============================================================
-   CHARTS
-   ============================================================ */
+/* ===== CHARTS ===== */
 .charts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
@@ -803,53 +1007,220 @@ export default {
 
 .legend-percent { color: var(--ink-muted); font-size: 0.7rem; }
 
-/* Bar chart */
+/* Bar chart horizontal (ventes) */
 .bar-chart-container { margin-top: 0.5rem; }
 
 .bar-item {
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  margin-bottom: 0.7rem;
+  margin-bottom: 1rem;
+  padding: 0.3rem 0;
 }
 
 .bar-label {
   width: 70px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink);
   flex-shrink: 0;
 }
 
 .bar-wrapper {
   flex: 1;
   background: var(--parchment);
-  border-radius: 20px;
+  border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--border);
+  height: 40px;
 }
 
 .bar {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-right: 0.75rem;
-  border-radius: 20px;
-  transition: width 0.6s ease;
+  padding-right: 1rem;
+  border-radius: 8px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   min-width: 60px;
-  height: 34px;
+  height: 40px;
+}
+
+.sales-bar {
+  background: linear-gradient(90deg, #3B82F6, #60A5FA);
+  box-shadow: 0 2px 8px rgba(59,130,246,0.3);
+}
+
+.sales-bar:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 4px 12px rgba(59,130,246,0.4);
 }
 
 .bar-value {
   color: white;
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
-/* ============================================================
-   TABLE CARD
-   ============================================================ */
+.bar-value-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  min-width: 80px;
+  text-align: right;
+  margin-left: 8px;
+}
+
+/* Diagramme vertical pour la mortalité */
+.vertical-bar-chart {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  padding: 1rem 0;
+}
+
+.chart-y-axis {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 60px;
+  flex-shrink: 0;
+}
+
+.y-axis-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.y-axis-grid {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 220px;
+  position: relative;
+}
+
+.y-tick {
+  font-size: 0.7rem;
+  color: var(--ink-muted);
+  text-align: right;
+  position: relative;
+}
+
+.y-tick::after {
+  content: '';
+  position: absolute;
+  left: 25px;
+  right: -40px;
+  top: 50%;
+  height: 1px;
+  background: var(--border);
+  z-index: 0;
+}
+
+.chart-bars-container {
+  flex: 1;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  gap: 1rem;
+  padding-left: 0.5rem;
+}
+
+.vertical-bar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bar-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 220px;
+  width: 100%;
+}
+
+.vertical-bar {
+  width: 60px;
+  max-width: 80px;
+  border-radius: 8px 8px 0 0;
+  transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding-top: 5px;
+  cursor: pointer;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+}
+
+.vertical-bar:hover {
+  transform: scaleX(1.05);
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+}
+
+.bar-value-top {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.bar-label-x {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: center;
+}
+
+@keyframes slideIn {
+  from {
+    width: 0%;
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.bar, .vertical-bar {
+  animation: slideIn 0.6s ease-out;
+}
+
+.empty-chart {
+  text-align: center;
+  padding: 2rem;
+  color: var(--ink-muted);
+}
+
+/* Table mortalité */
+.table-mortality td { padding: 0.6rem 0.85rem; }
+.mortality-bar-mini {
+  width: 100px;
+  height: 8px;
+  background: var(--parchment);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.mortality-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #C2410C, #FB923C);
+  border-radius: 10px;
+  transition: width 0.6s ease;
+}
+
+/* ===== TABLE CARD ===== */
 .table-card {
   background: white;
   border: 1px solid var(--border);
@@ -950,9 +1321,13 @@ export default {
 
 .btn-view:hover { background: var(--wheat); }
 
-/* ============================================================
-   FOOTER STATS
-   ============================================================ */
+.empty-row {
+  text-align: center;
+  padding: 2rem;
+  color: var(--ink-muted);
+}
+
+/* ===== FOOTER STATS ===== */
 .footer-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -1008,9 +1383,7 @@ export default {
   margin: 0;
 }
 
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
+/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .dashboard-container { padding: 1rem; }
   .dashboard-header { flex-direction: column; align-items: stretch; }
@@ -1020,11 +1393,26 @@ export default {
   .charts-grid { grid-template-columns: 1fr; }
   .pie-chart { width: 140px; height: 140px; }
   .footer-stats { grid-template-columns: 1fr; }
+  .bar-item { flex-wrap: wrap; }
+  .bar-label { width: 50px; }
+  .bar-value-label { min-width: 60px; font-size: 0.65rem; }
+  .vertical-bar { width: 40px; }
+  .y-axis-grid { height: 180px; }
+  .bar-container { height: 180px; }
+  .y-tick::after { left: 15px; right: -20px; }
 }
 
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: 1fr; }
   .dashboard-title { font-size: 1.5rem; }
   .stat-number { font-size: 1.7rem; }
+  .bar-label { width: 45px; font-size: 0.7rem; }
+  .bar { height: 30px; }
+  .bar-value { font-size: 0.65rem; }
+  .bar-wrapper { height: 30px; }
+  .vertical-bar { width: 30px; }
+  .bar-label-x { font-size: 0.65rem; }
+  .y-axis-grid { height: 150px; }
+  .bar-container { height: 150px; }
 }
 </style>

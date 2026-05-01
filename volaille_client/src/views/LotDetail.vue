@@ -240,7 +240,7 @@ export default {
     }
   },
   computed: {
-    // Calcul des alertes stock - CORRIGÉ avec conversion kg/sac
+    // Calcul des alertes stock  avec conversion kg/sac
     stockWarnings() {
       const warnings = []
       for (let item of this.suiviForm.consumptions) {

@@ -3,7 +3,9 @@ const {
     getDashboardData, 
     getRecentLots, 
     getAlertes,
-    getFullDashboard 
+    getFullDashboard,
+    getVentesMensuelles,
+    getMortaliteMensuelle
 } = require('../controllers/dashboardController');
 const authenticateToken = require('../middleware/auth');
 
@@ -23,5 +25,11 @@ router.get('/alertes', getAlertes);
 
 // Route complète (tout en une seule requête)
 router.get('/full', getFullDashboard);
+
+// Route pour les ventes mensuelles
+router.get('/ventes-mensuelles', getVentesMensuelles);
+
+// Route pour le taux de mortalité mensuel
+router.get('/mortalite-mensuelle', getMortaliteMensuelle);
 
 module.exports = router;
